@@ -8,6 +8,8 @@
 - `generate_multisource_esg_raw.py`: E 데이터 출처별 원형(정형/반정형/비정형) 원시데이터 생성기
 - `normalize_multisource_esg.py`: E 다중 출처 원시데이터를 공통 staging 스키마로 정규화
 - `run_esg_unified_pipeline.py`: 정형+반정형+비정형 입력을 단일 흐름으로 병합 실행하는 오케스트레이터
+- `bridge_staging_to_canonical.py`: staging을 claim/row로 승격하고 committed/merged/rejected 분기
+- `calculate_canonical_emissions.py`: merged canonical row만 대상으로 배출량 계산
 - `esg_excel_skeleton.py`: 엑셀 기반 전처리/산정/마이닝 뼈대 코드
 - `requirements.txt`: 엑셀 파이프라인 실행용 의존성
 
@@ -38,7 +40,13 @@ python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg --tr
 ```bash
 python run_esg_unified_pipeline.py --work-dir ./unified_esg --base-rows 80 --source-rows 40 --seed 42 --trace
 ```
-산출물은 `./unified_esg/base` 하위에 생성됩니다.
+핵심 산출물은 `./unified_esg/bridge` 하위에 생성됩니다.
+- `claims.csv`
+- `resolved_rows.csv`
+- `commit_table.csv`
+- `event_log.csv`
+- `canonical_rows.csv` (merged only)
+- `canonical_activity_emissions.csv` (merged only 계산)
 
 ## 3) 다중 출처 원시데이터 생성 (정형+반정형+비정형)
 ```bash

@@ -41,14 +41,19 @@
 ## 4) 아키텍처 (MVP)
 1. **Source Layer**: 출처별 원형 데이터 생성/수집
 2. **Structure Recovery Layer**: row/col 정리, 헤더/레코드 경계 감지
-3. **Candidate Layer**: key 후보, value 후보 추출
-4. **Mapping Loop Layer**: 가설-파싱-검증-수정 반복
-5. **Standardization Layer**: 단위 환산 및 값 정규화
-6. **Calculation Layer**: factor 매칭, `co2e_kg` 계산
+3. **Claim Extraction Layer**: raw에서 claim 후보 추출
+4. **Resolution Bridge Layer**: claim -> row 승격, 점수 기반 상태 분기
+5. **Ledger Layer**: event/commit/trace 기록
+6. **Canonical Layer**: merged row만 공식 반영
+7. **Calculation Layer**: canonical row에만 factor 매칭, `co2e_kg` 계산
 
 ---
 
 ## 5) 데이터 계약 (최소 스키마)
+
+### 5.0 표현 축 / 상태 축
+- representation: `raw | claim | row`
+- status: `draft | resolving | review_required | committed | merged | rejected`
 
 ### 5.1 unified_raw_staging.csv
 - `source_type`
@@ -77,8 +82,40 @@
 - `conversion_status` (`converted`/`already_standard`/`failed`)
 - `conversion_note`
 
-### 5.3 activity_emissions.csv
-- `activity_id`
+### 5.3 claim 계층 (claims.csv)
+- `claim_id`
+- `parent_raw_id`
+- `source_type`
+- `source_ref`
+- `evidence_text`
+- `proposed_site`
+- `proposed_period`
+- `proposed_activity_type`
+- `proposed_raw_amount`
+- `proposed_raw_unit`
+- `parser_version`
+- `representation` (`claim`)
+- `status`
+
+### 5.4 resolved row 계층 (resolved_rows.csv)
+- `row_id`
+- `parent_claim_id`
+- `site_id`
+- `entity_id`
+- `scope_category`
+- `reporting_included`
+- `activity_type`
+- `raw_amount`
+- `raw_unit`
+- `standardized_amount`
+- `standardized_unit`
+- `resolution_score`
+- `representation` (`row`)
+- `status`
+- `reason_code`
+
+### 5.5 canonical 계산 결과 (canonical_activity_emissions.csv)
+- `row_id`
 - `factor_id`
 - `standardized_amount`
 - `standardized_unit`
@@ -87,8 +124,6 @@
 - `co2e_kg`
 - `scope_category`
 - `calculation_status` (`success`/`failed`/`excluded`)
-- `excluded_from_reporting`
-- `exclusion_reason`
 - `calculation_version`
 - `calculated_at`
 
