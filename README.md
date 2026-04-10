@@ -7,6 +7,7 @@
 - `process_esg_dummy_data.py`: **E 도메인 처리 전용** 정책 실행기 (표준화 + 배출량 계산)
 - `generate_multisource_esg_raw.py`: E 데이터 출처별 원형(정형/반정형/비정형) 원시데이터 생성기
 - `normalize_multisource_esg.py`: E 다중 출처 원시데이터를 공통 staging 스키마로 정규화
+- `run_esg_unified_pipeline.py`: 정형+반정형+비정형 입력을 단일 흐름으로 병합 실행하는 오케스트레이터
 - `esg_excel_skeleton.py`: 엑셀 기반 전처리/산정/마이닝 뼈대 코드
 - `requirements.txt`: 엑셀 파이프라인 실행용 의존성
 
@@ -31,6 +32,13 @@ python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg --au
 # 설명가능 trace 로그를 남기려면:
 python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg --trace
 ```
+
+## 단일 파이프라인(권장)
+정형+반정형+비정형 입력을 한 번에 섞어 처리하려면 아래 명령 하나로 실행합니다.
+```bash
+python run_esg_unified_pipeline.py --work-dir ./unified_esg --base-rows 80 --source-rows 40 --seed 42 --trace
+```
+산출물은 `./unified_esg/base` 하위에 생성됩니다.
 
 ## 3) 다중 출처 원시데이터 생성 (정형+반정형+비정형)
 ```bash

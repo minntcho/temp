@@ -193,3 +193,12 @@
 ### Sprint 3
 - 규칙 튜닝 + 평가셋 기반 성능 측정
 - 운영 문서화
+
+---
+
+## 13) 실행 모드
+- 분리 실행 모드:
+  - raw/master 생성 → 정규화/계산
+  - multisource 생성 → staging 정규화
+- 단일 실행 모드(권장):
+  - `run_esg_unified_pipeline.py`로 정형+반정형+비정형 소스를 한 번에 병합 처리
