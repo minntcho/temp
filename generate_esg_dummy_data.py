@@ -1,4 +1,7 @@
-"""ESG 맥락/경계(boundary) + 표준화/계산 계층을 반영한 더미 데이터 생성기.
+"""ESG 더미 데이터 생성기 (생성 전용).
+
+역할:
+- 마스터/원시 데이터 생성만 수행 (처리 정책 미포함)
 
 생성 산출물
 - legal_entities.csv
@@ -9,8 +12,6 @@
 - unit_conversions.csv
 - emission_factors.csv
 - activity_raw.csv
-- activity_normalized.csv
-- activity_emissions.csv
 - metadata.json
 """
 
@@ -21,7 +22,7 @@ import csv
 import json
 import random
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Iterable
 
@@ -102,7 +103,6 @@ def validate_args(args: argparse.Namespace) -> None:
 def generate_legal_entities(num_entities: int) -> list[dict[str, str]]:
     ownership_types = ["operational_control", "financial_control", "equity_share"]
     countries = ["KR", "US", "VN", "CN"]
-
     rows = []
     for i in range(1, num_entities + 1):
         rows.append(
@@ -121,7 +121,6 @@ def generate_sites(num_sites: int, entities: list[dict[str, str]], seed: int) ->
     rng = random.Random(seed + 101)
     site_types = ["plant", "office", "warehouse"]
     energy_profiles = list(ENERGY_PROFILE_TO_ALLOWED_ACTIVITIES.keys())
-
     rows = []
     for i in range(1, num_sites + 1):
         entity = rng.choice(entities)
@@ -142,7 +141,6 @@ def generate_sites(num_sites: int, entities: list[dict[str, str]], seed: int) ->
 def generate_products(num_products: int, sites: list[dict[str, str]], seed: int) -> list[dict[str, str]]:
     rng = random.Random(seed + 202)
     product_categories = ["component", "module", "assembly", "packaging"]
-
     rows = []
     for i in range(1, num_products + 1):
         main_site = rng.choice(sites)
@@ -156,7 +154,6 @@ def generate_products(num_products: int, sites: list[dict[str, str]], seed: int)
             }
         )
 
-    # plant 사이트에는 최소 1개 제품을 강제 배정하여 site-product 경계 붕괴 방지
     plant_sites = [s for s in sites if s["site_type"] == "plant"]
     product_by_site = {p["main_site_id"] for p in rows}
     idx = 0
@@ -164,14 +161,12 @@ def generate_products(num_products: int, sites: list[dict[str, str]], seed: int)
         if site["site_id"] not in product_by_site:
             rows[idx % len(rows)]["main_site_id"] = site["site_id"]
             idx += 1
-
     return rows
 
 
 def generate_suppliers(num_suppliers: int) -> list[dict[str, str]]:
     sectors = ["metal", "chemical", "electronics", "logistics", "packaging"]
     grades = ["A", "B", "C"]
-
     rows = []
     for i in range(1, num_suppliers + 1):
         rows.append(
@@ -204,55 +199,15 @@ def generate_reporting_calendar(start: date, end: date) -> list[dict[str, str | 
 
 def generate_unit_conversions() -> list[dict[str, str | float]]:
     return [
-        {
-            "conversion_id": "UC-ELC-MWH-TO-KWH",
-            "activity_type": "electricity",
-            "from_unit": "MWh",
-            "to_unit": "kWh",
-            "multiplier": 1000.0,
-            "offset": 0.0,
-            "rule_version": "v1.0",
-            "valid_from": "2025-01-01",
-            "valid_to": "2026-12-31",
-        },
-        {
-            "conversion_id": "UC-DSL-GALLON-TO-L",
-            "activity_type": "diesel",
-            "from_unit": "gallon",
-            "to_unit": "L",
-            "multiplier": 3.78541,
-            "offset": 0.0,
-            "rule_version": "v1.0",
-            "valid_from": "2025-01-01",
-            "valid_to": "2026-12-31",
-        },
-        {
-            "conversion_id": "UC-NG-M3-TO-NM3",
-            "activity_type": "natural_gas",
-            "from_unit": "m3",
-            "to_unit": "Nm3",
-            "multiplier": 1.0,
-            "offset": 0.0,
-            "rule_version": "v1.0",
-            "valid_from": "2025-01-01",
-            "valid_to": "2026-12-31",
-        },
-        {
-            "conversion_id": "UC-STM-KG-TO-TON",
-            "activity_type": "steam",
-            "from_unit": "kg",
-            "to_unit": "ton",
-            "multiplier": 0.001,
-            "offset": 0.0,
-            "rule_version": "v1.0",
-            "valid_from": "2025-01-01",
-            "valid_to": "2026-12-31",
-        },
+        {"conversion_id": "UC-ELC-MWH-TO-KWH", "activity_type": "electricity", "from_unit": "MWh", "to_unit": "kWh", "multiplier": 1000.0, "offset": 0.0, "rule_version": "v1.0", "valid_from": "2025-01-01", "valid_to": "2026-12-31"},
+        {"conversion_id": "UC-DSL-GALLON-TO-L", "activity_type": "diesel", "from_unit": "gallon", "to_unit": "L", "multiplier": 3.78541, "offset": 0.0, "rule_version": "v1.0", "valid_from": "2025-01-01", "valid_to": "2026-12-31"},
+        {"conversion_id": "UC-NG-M3-TO-NM3", "activity_type": "natural_gas", "from_unit": "m3", "to_unit": "Nm3", "multiplier": 1.0, "offset": 0.0, "rule_version": "v1.0", "valid_from": "2025-01-01", "valid_to": "2026-12-31"},
+        {"conversion_id": "UC-STM-KG-TO-TON", "activity_type": "steam", "from_unit": "kg", "to_unit": "ton", "multiplier": 0.001, "offset": 0.0, "rule_version": "v1.0", "valid_from": "2025-01-01", "valid_to": "2026-12-31"},
     ]
 
 
 def generate_emission_factors() -> list[dict[str, str | float]]:
-    rows: list[dict[str, str | float]] = []
+    rows = []
     for idx, p in enumerate(PROFILES, start=1):
         rows.append(
             {
@@ -275,7 +230,6 @@ def generate_emission_factors() -> list[dict[str, str | float]]:
 
 def inject_anomaly(row: dict[str, str | float], rng: random.Random) -> str:
     anomaly_type = rng.choice(["spike", "zero", "negative", "unit_mismatch", "missing_product"])
-
     if anomaly_type == "spike":
         row["raw_amount"] = round(float(row["raw_amount"]) * rng.uniform(5, 12), 3)
     elif anomaly_type == "zero":
@@ -283,56 +237,31 @@ def inject_anomaly(row: dict[str, str | float], rng: random.Random) -> str:
     elif anomaly_type == "negative":
         row["raw_amount"] = -abs(float(row["raw_amount"]))
     elif anomaly_type == "unit_mismatch":
-        activity_type = str(row["activity_type"])
-        row["raw_unit"] = POSSIBLE_WRONG_UNITS.get(activity_type, str(row["raw_unit"]))
+        row["raw_unit"] = POSSIBLE_WRONG_UNITS.get(str(row["activity_type"]), str(row["raw_unit"]))
     elif anomaly_type == "missing_product":
         row["product_id"] = ""
-
     return anomaly_type
 
 
-def generate_activity_raw(
-    *,
-    rows: int,
-    start_date: date,
-    end_date: date,
-    anomaly_rate: float,
-    seed: int,
-    sites: list[dict[str, str]],
-    products: list[dict[str, str]],
-    suppliers: list[dict[str, str]],
-) -> tuple[list[dict[str, str | float]], dict[str, int]]:
+def generate_activity_raw(*, rows: int, start_date: date, end_date: date, anomaly_rate: float, seed: int, sites: list[dict[str, str]], products: list[dict[str, str]], suppliers: list[dict[str, str]]) -> tuple[list[dict[str, str | float]], dict[str, int]]:
     rng = random.Random(seed)
-
     dates = list(daterange(start_date, end_date))
-    if not dates:
-        raise ValueError("start_date must be <= end_date")
-
     profile_map = {p.activity_type: p for p in PROFILES}
+
     products_by_site: dict[str, list[dict[str, str]]] = {}
     for p in products:
         products_by_site.setdefault(p["main_site_id"], []).append(p)
 
     anomaly_counter: dict[str, int] = {}
     results: list[dict[str, str | float]] = []
-
     for i in range(1, rows + 1):
         site = rng.choice(sites)
-        allowed_types = list(ENERGY_PROFILE_TO_ALLOWED_ACTIVITIES[site["energy_profile"]])
-        activity_type = rng.choice(allowed_types)
+        activity_type = rng.choice(list(ENERGY_PROFILE_TO_ALLOWED_ACTIVITIES[site["energy_profile"]]))
         profile = profile_map[activity_type]
-
         activity_date = rng.choice(dates)
         period_id = f"P-{activity_date.year}{activity_date.month:02d}"
-
-        # plant는 site-연결 제품, office/warehouse는 product 비워도 허용
         site_products = products_by_site.get(site["site_id"], [])
-        if site["site_type"] == "plant" and site_products:
-            product_id = rng.choice(site_products)["product_id"]
-        elif site["site_type"] == "plant":
-            product_id = ""
-        else:
-            product_id = ""
+        product_id = rng.choice(site_products)["product_id"] if site["site_type"] == "plant" and site_products else ""
 
         row: dict[str, str | float] = {
             "activity_id": f"ACT-{i:07d}",
@@ -360,132 +289,14 @@ def generate_activity_raw(
         else:
             row["is_injected_anomaly"] = "N"
             row["injected_anomaly_type"] = ""
-
         results.append(row)
-
     return results, anomaly_counter
-
-
-def normalize_activity_units(
-    raw_rows: list[dict[str, str | float]], conversion_rules: list[dict[str, str | float]]
-) -> list[dict[str, str | float]]:
-    profile_std = {p.activity_type: p.standard_unit for p in PROFILES}
-    rule_map = {(r["activity_type"], r["from_unit"]): r for r in conversion_rules}
-
-    out: list[dict[str, str | float]] = []
-    for r in raw_rows:
-        activity_type = str(r["activity_type"])
-        raw_unit = str(r["raw_unit"])
-        raw_amount = float(r["raw_amount"])
-        target_unit = profile_std.get(activity_type, raw_unit)
-
-        conversion_id = ""
-        conversion_status = "failed"
-        conversion_note = ""
-        standardized_unit = target_unit
-        standardized_amount: float | None = None
-
-        if raw_amount < 0:
-            conversion_status = "failed"
-            conversion_note = "negative_amount"
-        elif raw_unit == target_unit:
-            conversion_status = "already_standard"
-            standardized_amount = raw_amount
-        else:
-            rule = rule_map.get((activity_type, raw_unit))
-            if rule is None:
-                conversion_status = "failed"
-                conversion_note = "no_conversion_rule"
-            else:
-                conversion_id = str(rule["conversion_id"])
-                standardized_amount = raw_amount * float(rule["multiplier"]) + float(rule["offset"])
-                conversion_status = "converted"
-
-        out.append(
-            {
-                "activity_id": r["activity_id"],
-                "activity_type": activity_type,
-                "raw_unit": raw_unit,
-                "raw_amount": raw_amount,
-                "standardized_unit": standardized_unit,
-                "standardized_amount": "" if standardized_amount is None else round(standardized_amount, 6),
-                "conversion_id": conversion_id,
-                "conversion_status": conversion_status,
-                "conversion_note": conversion_note,
-            }
-        )
-
-    return out
-
-
-def calculate_activity_emissions(
-    raw_rows: list[dict[str, str | float]],
-    normalized_rows: list[dict[str, str | float]],
-    factors: list[dict[str, str | float]],
-) -> list[dict[str, str | float]]:
-    factor_map = {(f["activity_type"], f["unit"]): f for f in factors}
-    raw_map = {str(r["activity_id"]): r for r in raw_rows}
-
-    out: list[dict[str, str | float]] = []
-    for n in normalized_rows:
-        activity_id = str(n["activity_id"])
-        raw = raw_map[activity_id]
-
-        calc_status = "failed"
-        exclusion = "N"
-        exclusion_reason = ""
-        factor_id = ""
-        applied_factor: float | str = ""
-        factor_unit = ""
-        co2e_kg: float | str = ""
-
-        standardized_amount = n["standardized_amount"]
-        if standardized_amount == "":
-            calc_status = "failed"
-            exclusion_reason = "conversion_failed"
-        elif str(raw["reporting_included"]) == "N":
-            calc_status = "excluded"
-            exclusion = "Y"
-            exclusion_reason = "reporting_boundary_excluded"
-        else:
-            key = (str(n["activity_type"]), str(n["standardized_unit"]))
-            factor = factor_map.get(key)
-            if factor is None:
-                calc_status = "failed"
-                exclusion_reason = "factor_not_found"
-            else:
-                factor_id = str(factor["factor_id"])
-                applied_factor = float(factor["emission_factor"])
-                factor_unit = str(factor["factor_unit"])
-                co2e_kg = round(float(standardized_amount) * applied_factor, 6)
-                calc_status = "success"
-
-        out.append(
-            {
-                "activity_id": activity_id,
-                "factor_id": factor_id,
-                "standardized_amount": standardized_amount,
-                "standardized_unit": n["standardized_unit"],
-                "applied_factor": applied_factor,
-                "factor_unit": factor_unit,
-                "co2e_kg": co2e_kg,
-                "scope_category": raw["scope_category"],
-                "calculation_status": calc_status,
-                "excluded_from_reporting": exclusion,
-                "exclusion_reason": exclusion_reason,
-                "calculation_version": "calc-v1.0",
-                "calculated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-            }
-        )
-
-    return out
 
 
 def write_csv(path: Path, rows: list[dict[str, str | float | int]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
         raise ValueError(f"No rows to write: {path}")
-
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
@@ -493,7 +304,7 @@ def write_csv(path: Path, rows: list[dict[str, str | float | int]]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="ESG 맥락형 + 계산계층 더미 데이터 CSV 생성기")
+    parser = argparse.ArgumentParser(description="ESG 더미 데이터 생성기(생성 전용)")
     parser.add_argument("--out-dir", type=Path, default=Path("dummy_esg"))
     parser.add_argument("--rows", type=int, default=1000)
     parser.add_argument("--num-entities", type=int, default=5)
@@ -510,7 +321,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     validate_args(args)
-
     start_date = parse_iso_date(args.start_date)
     end_date = parse_iso_date(args.end_date)
 
@@ -521,19 +331,7 @@ def main() -> None:
     calendar = generate_reporting_calendar(start_date, end_date)
     unit_conversions = generate_unit_conversions()
     factors = generate_emission_factors()
-
-    raw_rows, anomaly_counter = generate_activity_raw(
-        rows=args.rows,
-        start_date=start_date,
-        end_date=end_date,
-        anomaly_rate=args.anomaly_rate,
-        seed=args.seed,
-        sites=sites,
-        products=products,
-        suppliers=suppliers,
-    )
-    normalized_rows = normalize_activity_units(raw_rows, unit_conversions)
-    emissions_rows = calculate_activity_emissions(raw_rows, normalized_rows, factors)
+    raw_rows, anomaly_counter = generate_activity_raw(rows=args.rows, start_date=start_date, end_date=end_date, anomaly_rate=args.anomaly_rate, seed=args.seed, sites=sites, products=products, suppliers=suppliers)
 
     write_csv(args.out_dir / "legal_entities.csv", entities)
     write_csv(args.out_dir / "sites.csv", sites)
@@ -543,8 +341,6 @@ def main() -> None:
     write_csv(args.out_dir / "unit_conversions.csv", unit_conversions)
     write_csv(args.out_dir / "emission_factors.csv", factors)
     write_csv(args.out_dir / "activity_raw.csv", raw_rows)
-    write_csv(args.out_dir / "activity_normalized.csv", normalized_rows)
-    write_csv(args.out_dir / "activity_emissions.csv", emissions_rows)
 
     metadata = {
         "rows": args.rows,
@@ -552,27 +348,15 @@ def main() -> None:
         "anomaly_rate": args.anomaly_rate,
         "seed": args.seed,
         "generated_files": [
-            "legal_entities.csv",
-            "sites.csv",
-            "products.csv",
-            "suppliers.csv",
-            "reporting_calendar.csv",
-            "unit_conversions.csv",
-            "emission_factors.csv",
-            "activity_raw.csv",
-            "activity_normalized.csv",
-            "activity_emissions.csv",
+            "legal_entities.csv", "sites.csv", "products.csv", "suppliers.csv", "reporting_calendar.csv",
+            "unit_conversions.csv", "emission_factors.csv", "activity_raw.csv"
         ],
         "injected_anomaly_count": sum(anomaly_counter.values()),
         "injected_anomaly_breakdown": anomaly_counter,
-        "notes": "Boundary-aware ESG dummy data with normalization + emissions calculation layers",
+        "notes": "Generation-only ESG dummy dataset",
     }
-    (args.out_dir / "metadata.json").write_text(
-        json.dumps(metadata, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-    print(f"[OK] dummy data generated at: {args.out_dir.resolve()}")
+    (args.out_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[OK] raw/master data generated at: {args.out_dir.resolve()}")
     print(json.dumps(metadata, ensure_ascii=False, indent=2))
 
 
