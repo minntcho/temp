@@ -1,12 +1,12 @@
 # temp
 
-기초 ESG 데이터 파이프라인 실험용 저장소입니다.
+기초 **E(Environment, 환경)** 데이터 파이프라인 실험용 저장소입니다.
 
 ## 포함 파일
-- `generate_esg_dummy_data.py`: 생성 전용 더미 데이터 생성기 (마스터 + `activity_raw`)
-- `process_esg_dummy_data.py`: 처리 전용 정책 실행기 (표준화 + 배출량 계산)
-- `generate_multisource_esg_raw.py`: 출처별 원형(정형/반정형/비정형) 원시데이터 생성기
-- `normalize_multisource_esg.py`: 다중 출처 원시데이터를 공통 staging 스키마로 정규화
+- `generate_esg_dummy_data.py`: **E 도메인 생성 전용** 더미 데이터 생성기 (마스터 + `activity_raw`)
+- `process_esg_dummy_data.py`: **E 도메인 처리 전용** 정책 실행기 (표준화 + 배출량 계산)
+- `generate_multisource_esg_raw.py`: E 데이터 출처별 원형(정형/반정형/비정형) 원시데이터 생성기
+- `normalize_multisource_esg.py`: E 다중 출처 원시데이터를 공통 staging 스키마로 정규화
 - `esg_excel_skeleton.py`: 엑셀 기반 전처리/산정/마이닝 뼈대 코드
 - `requirements.txt`: 엑셀 파이프라인 실행용 의존성
 

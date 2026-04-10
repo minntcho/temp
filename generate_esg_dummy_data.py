@@ -1,4 +1,4 @@
-"""ESG 더미 데이터 생성기 (생성 전용).
+"""E(환경) 도메인 전용 더미 데이터 생성기 (생성 전용).
 
 역할:
 - 마스터/원시 데이터 생성만 수행 (처리 정책 미포함)
@@ -165,18 +165,14 @@ def generate_products(num_products: int, sites: list[dict[str, str]], seed: int)
 
 
 def generate_suppliers(num_suppliers: int) -> list[dict[str, str]]:
-    sectors = ["metal", "chemical", "electronics", "logistics", "packaging"]
-    grades = ["A", "B", "C"]
+    """E 도메인에 필요한 최소 협력사 식별 정보만 생성."""
     rows = []
     for i in range(1, num_suppliers + 1):
         rows.append(
             {
                 "supplier_id": f"SUP-{i:03d}",
                 "supplier_name": f"Supplier_{i:03d}",
-                "sector": sectors[(i - 1) % len(sectors)],
                 "country": "KR" if i % 2 else "US",
-                "esg_grade": grades[(i - 1) % len(grades)],
-                "human_rights_risk": "high" if i % 13 == 0 else "low",
             }
         )
     return rows
@@ -353,7 +349,7 @@ def main() -> None:
         ],
         "injected_anomaly_count": sum(anomaly_counter.values()),
         "injected_anomaly_breakdown": anomaly_counter,
-        "notes": "Generation-only ESG dummy dataset",
+        "notes": "Generation-only E-domain dummy dataset",
     }
     (args.out_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[OK] raw/master data generated at: {args.out_dir.resolve()}")
