@@ -156,6 +156,20 @@
 - 실패 사유 코드(`note`, `exclusion_reason`) 저장
 - 처리 요약 리포트(JSON) 자동 생성
 
+### 11.1 Commit / Merge 분리 원칙 (MVP 필수)
+- 자동 승인 결과는 `committed` 상태로 기록하고 즉시 canonical 반영하지 않는다.
+- `merged`는 별도 정책 사건(사람 승인 또는 명시적 자동 머지 플래그)으로 승격한다.
+- 공식 계산/리포트 반영은 `merged` 상태 레코드만 대상으로 한다.
+
+### 11.2 최소 Ledger 스키마
+- `event_log`:
+  - `event_id`, `record_id`, `event_type`, `from_status`, `to_status`
+  - `score`, `reason_code`, `actor`, `created_at`
+- `commit_table`:
+  - `commit_id`, `record_id`, `parent_commit_id`
+  - `score`, `reason_code`, `rule_version`, `model_version`
+  - `created_by`, `created_at`, `to_status`
+
 ---
 
 ## 12) 릴리스 계획

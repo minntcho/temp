@@ -26,6 +26,8 @@ python generate_esg_dummy_data.py \
 ## 2) 정책 처리 (Processing only)
 ```bash
 python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg
+# 자동 merged 승격이 필요하면:
+python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg --auto-merge
 ```
 
 ## 3) 다중 출처 원시데이터 생성 (정형+반정형+비정형)
@@ -48,6 +50,11 @@ python normalize_multisource_esg.py --in-dir ./raw_multisource --out-dir ./raw_m
 출력 파일:
 - `unified_raw_staging.csv`
 - `parse_report.json`
+
+## 처리기 추가 산출물 (commit/merge lifecycle)
+- `commit_table.csv` (commit snapshot)
+- `event_log.csv` (상태 전이 이벤트 로그)
+- `canonical_activity_emissions.csv` (`--auto-merge` 사용 시 생성)
 
 ## 엑셀 파이프라인 실행 (선택)
 ```bash

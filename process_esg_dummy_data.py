@@ -9,6 +9,9 @@
 - activity_normalized.csv
 - activity_emissions.csv
 - processing_report.json
+- commit_table.csv
+- event_log.csv
+- canonical_activity_emissions.csv
 """
 
 from __future__ import annotations
@@ -151,6 +154,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="ESG 더미 데이터 처리기(정책 적용 전용)")
     parser.add_argument("--in-dir", type=Path, default=Path("dummy_esg"))
     parser.add_argument("--out-dir", type=Path, default=Path("dummy_esg"))
+    parser.add_argument("--auto-merge", action="store_true", help="committed 결과를 자동 merged 상태로 승격")
     return parser.parse_args()
 
 
@@ -164,8 +168,66 @@ def main() -> None:
     normalized_rows = normalize_activity_units(raw_rows, conversion_rules)
     emissions_rows = calculate_activity_emissions(raw_rows, normalized_rows, factors)
 
+    # Commit/Merge lifecycle (MVP)
+    commit_rows: list[dict[str, str | float]] = []
+    event_rows: list[dict[str, str | float]] = []
+    canonical_rows: list[dict[str, str | float]] = []
+    now = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+    for idx, row in enumerate(emissions_rows, start=1):
+        activity_id = str(row["activity_id"])
+        status = str(row["calculation_status"])
+        score = 0.95 if status == "success" else 0.35
+
+        if status == "success":
+            final_status = "merged" if args.auto_merge else "committed"
+            reason_code = "auto_approved"
+        elif status == "excluded":
+            final_status = "review_required"
+            reason_code = "boundary_excluded"
+        else:
+            final_status = "rejected"
+            reason_code = str(row["exclusion_reason"] or "calculation_failed")
+
+        commit_id = f"CMT-{idx:07d}"
+        commit_rows.append(
+            {
+                "commit_id": commit_id,
+                "record_id": activity_id,
+                "parent_commit_id": "",
+                "score": score,
+                "reason_code": reason_code,
+                "rule_version": "rules-v1.0",
+                "model_version": "rule-only",
+                "created_by": "system",
+                "created_at": now,
+                "to_status": final_status,
+            }
+        )
+
+        event_rows.append(
+            {
+                "event_id": f"EVT-{idx:07d}",
+                "record_id": activity_id,
+                "event_type": "AUTO_COMMITTED" if status == "success" else "REVIEW_REQUIRED",
+                "from_status": "draft",
+                "to_status": final_status,
+                "score": score,
+                "reason_code": reason_code,
+                "actor": "system",
+                "created_at": now,
+            }
+        )
+
+        if final_status == "merged":
+            canonical_rows.append(row)
+
     write_csv(args.out_dir / "activity_normalized.csv", normalized_rows)
     write_csv(args.out_dir / "activity_emissions.csv", emissions_rows)
+    write_csv(args.out_dir / "commit_table.csv", commit_rows)
+    write_csv(args.out_dir / "event_log.csv", event_rows)
+    if canonical_rows:
+        write_csv(args.out_dir / "canonical_activity_emissions.csv", canonical_rows)
 
     processing_report = {
         "input_rows": len(raw_rows),
@@ -174,6 +236,10 @@ def main() -> None:
         "calculation_success": sum(1 for r in emissions_rows if r["calculation_status"] == "success"),
         "calculation_failed": sum(1 for r in emissions_rows if r["calculation_status"] == "failed"),
         "calculation_excluded": sum(1 for r in emissions_rows if r["calculation_status"] == "excluded"),
+        "committed": sum(1 for r in commit_rows if r["to_status"] == "committed"),
+        "merged": sum(1 for r in commit_rows if r["to_status"] == "merged"),
+        "review_required": sum(1 for r in commit_rows if r["to_status"] == "review_required"),
+        "rejected": sum(1 for r in commit_rows if r["to_status"] == "rejected"),
     }
     (args.out_dir / "processing_report.json").write_text(json.dumps(processing_report, ensure_ascii=False, indent=2), encoding="utf-8")
 
