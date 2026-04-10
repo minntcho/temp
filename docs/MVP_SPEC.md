@@ -170,6 +170,14 @@
   - `score`, `reason_code`, `rule_version`, `model_version`
   - `created_by`, `created_at`, `to_status`
 
+### 11.3 Explainable Trace (디버깅/가시화용)
+- 레코드 단위 처리 근거를 `trace_log.jsonl`로 남긴다.
+- 최소 필드:
+  - `trace_id`, `record_id`, `timestamp`
+  - `normalization` (`conversion_status`, `raw_unit`, `standardized_unit`, `conversion_note`)
+  - `calculation` (`calculation_status`, `factor_id`, `co2e_kg`, `exclusion_reason`)
+  - `decision` (`final_status`, `score`, `reason_code`, `auto_merge`)
+
 ---
 
 ## 12) 릴리스 계획

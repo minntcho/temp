@@ -12,6 +12,7 @@
 - commit_table.csv
 - event_log.csv
 - canonical_activity_emissions.csv
+- trace_log.jsonl
 """
 
 from __future__ import annotations
@@ -155,6 +156,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--in-dir", type=Path, default=Path("dummy_esg"))
     parser.add_argument("--out-dir", type=Path, default=Path("dummy_esg"))
     parser.add_argument("--auto-merge", action="store_true", help="committed 결과를 자동 merged 상태로 승격")
+    parser.add_argument("--trace", action="store_true", help="설명가능한 처리 trace(jsonl) 출력")
     return parser.parse_args()
 
 
@@ -172,6 +174,7 @@ def main() -> None:
     commit_rows: list[dict[str, str | float]] = []
     event_rows: list[dict[str, str | float]] = []
     canonical_rows: list[dict[str, str | float]] = []
+    trace_rows: list[dict[str, str | float]] = []
     now = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
     for idx, row in enumerate(emissions_rows, start=1):
@@ -222,12 +225,45 @@ def main() -> None:
         if final_status == "merged":
             canonical_rows.append(row)
 
+        if args.trace:
+            norm_row = next((n for n in normalized_rows if str(n["activity_id"]) == activity_id), None)
+            trace_rows.append(
+                {
+                    "trace_id": f"TRC-{idx:07d}",
+                    "record_id": activity_id,
+                    "timestamp": now,
+                    "normalization": {
+                        "conversion_status": "" if norm_row is None else norm_row["conversion_status"],
+                        "conversion_note": "" if norm_row is None else norm_row["conversion_note"],
+                        "raw_unit": "" if norm_row is None else norm_row["raw_unit"],
+                        "standardized_unit": "" if norm_row is None else norm_row["standardized_unit"],
+                    },
+                    "calculation": {
+                        "calculation_status": row["calculation_status"],
+                        "factor_id": row["factor_id"],
+                        "co2e_kg": row["co2e_kg"],
+                        "exclusion_reason": row["exclusion_reason"],
+                    },
+                    "decision": {
+                        "final_status": final_status,
+                        "score": score,
+                        "reason_code": reason_code,
+                        "auto_merge": args.auto_merge,
+                    },
+                }
+            )
+
     write_csv(args.out_dir / "activity_normalized.csv", normalized_rows)
     write_csv(args.out_dir / "activity_emissions.csv", emissions_rows)
     write_csv(args.out_dir / "commit_table.csv", commit_rows)
     write_csv(args.out_dir / "event_log.csv", event_rows)
     if canonical_rows:
         write_csv(args.out_dir / "canonical_activity_emissions.csv", canonical_rows)
+    if args.trace and trace_rows:
+        trace_path = args.out_dir / "trace_log.jsonl"
+        with trace_path.open("w", encoding="utf-8") as f:
+            for tr in trace_rows:
+                f.write(json.dumps(tr, ensure_ascii=False) + "\n")
 
     processing_report = {
         "input_rows": len(raw_rows),
@@ -240,6 +276,7 @@ def main() -> None:
         "merged": sum(1 for r in commit_rows if r["to_status"] == "merged"),
         "review_required": sum(1 for r in commit_rows if r["to_status"] == "review_required"),
         "rejected": sum(1 for r in commit_rows if r["to_status"] == "rejected"),
+        "trace_records": len(trace_rows),
     }
     (args.out_dir / "processing_report.json").write_text(json.dumps(processing_report, ensure_ascii=False, indent=2), encoding="utf-8")
 

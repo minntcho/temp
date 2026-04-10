@@ -28,6 +28,8 @@ python generate_esg_dummy_data.py \
 python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg
 # 자동 merged 승격이 필요하면:
 python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg --auto-merge
+# 설명가능 trace 로그를 남기려면:
+python process_esg_dummy_data.py --in-dir ./dummy_esg --out-dir ./dummy_esg --trace
 ```
 
 ## 3) 다중 출처 원시데이터 생성 (정형+반정형+비정형)
@@ -55,6 +57,7 @@ python normalize_multisource_esg.py --in-dir ./raw_multisource --out-dir ./raw_m
 - `commit_table.csv` (commit snapshot)
 - `event_log.csv` (상태 전이 이벤트 로그)
 - `canonical_activity_emissions.csv` (`--auto-merge` 사용 시 생성)
+- `trace_log.jsonl` (`--trace` 사용 시 생성, 레코드별 의사결정 근거)
 
 ## 엑셀 파이프라인 실행 (선택)
 ```bash
