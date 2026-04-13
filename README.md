@@ -54,3 +54,32 @@ python normalize_multisource_esg.py --in-dir ./raw_multisource --out-dir ./raw_m
 python esg_excel_skeleton.py --generate --excel-path ./mock_esg_data.xlsx
 python esg_excel_skeleton.py --excel-path ./mock_esg_data.xlsx
 ```
+
+## 5) FastAPI 기반 탄소배출량 분석 서버 (요구사항 반영)
+아래 기능을 포함합니다.
+- 제품별 탄소배출량 자동 계산 (`/v1/emissions/calculate`)
+- 키워드 기반 activity 자동 분류 (`/v1/keywords/classify`)
+- scikit-learn 이상치 탐지(IsolationForest) + 데이터 검증
+- 엑셀 템플릿 다운로드 (`/v1/excel/template`)
+- 엑셀 업로드 분석 (`/v1/excel/analyze`, 시트: `activity`, `emission_factors`)
+
+```bash
+uvicorn carbon_api:app --reload --port 8000
+```
+
+예시 요청:
+```bash
+curl -X POST http://127.0.0.1:8000/v1/emissions/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activities": [
+      {"product_id":"PRD-001","activity_type":"electricity","amount":1200,"unit":"kWh","description":"1월 전력"},
+      {"product_id":"PRD-001","activity_type":"diesel","amount":80,"unit":"L","description":"디젤 사용"}
+    ],
+    "factors": [
+      {"activity_type":"electricity","unit":"kWh","emission_factor":0.45},
+      {"activity_type":"diesel","unit":"L","emission_factor":2.68}
+    ],
+    "run_outlier_detection": true
+  }'
+```
