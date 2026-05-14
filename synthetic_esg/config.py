@@ -26,24 +26,6 @@ SCALE_PRESETS: dict[str, dict[str, int]] = {
         "suppliers": 2000,
         "meters": 5000,
     },
-    "large": {
-        "legal_entities": 18,
-        "business_units": 8,
-        "sites": 120,
-        "production_lines": 900,
-        "products": 500,
-        "suppliers": 5000,
-        "meters": 12000,
-    },
-    "stress": {
-        "legal_entities": 24,
-        "business_units": 12,
-        "sites": 200,
-        "production_lines": 1500,
-        "products": 900,
-        "suppliers": 10000,
-        "meters": 30000,
-    },
 }
 
 

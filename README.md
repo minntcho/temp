@@ -54,16 +54,22 @@ python -m synthetic_esg generate \
 ```bash
 python -m synthetic_esg generate \
   --profile profiles/lges_enterprise.yaml \
-  --scale large \
+  --scale enterprise \
   --months 36 \
   --sites 80 \
   --lines 500 \
   --products 300 \
   --suppliers 2000 \
   --meters 5000 \
-  --out-dir ./out/lges_large \
+  --out-dir ./out/lges_enterprise \
   --seed 42
 ```
+
+## Profiles
+
+기본 지원 프로필은 빠른 개발 검증용 `profiles/lges_smoke.yaml`과 대기업 규모 기준선인 `profiles/lges_enterprise.yaml`입니다.
+
+`profiles/experimental/` 아래의 `lges_large.yaml`, `lges_stress.yaml`은 대량/부하 검증용 후보 프로필입니다. 현재는 기본 테스트와 CLI scale preset에서 제외하며, row-generation 성능 최적화와 장기 실행 검증이 준비된 뒤 정식 경로로 올립니다.
 
 ## Target Output Layout
 
@@ -118,5 +124,6 @@ out/lges_2026_seed42/
 3. Phase 3: `profiles/*.yaml` 기반 scale, source mix, noise rate 제어
 4. Phase 4: `master/`, `raw_sources/`, `truth/`, `manifest.json` 출력 구조 고정
 5. Phase 5: seed 재현성, truth consistency, noise rate 테스트 추가
-6. Phase 6: smoke, enterprise, large, stress profile과 chunk writer 지원
+6. Phase 6: smoke, enterprise profile과 chunk writer 지원
 7. Phase 7: master/truth/raw source row generation 고도화 및 source mix 기반 partitioning
+8. Later: large, stress profile을 성능 검증 경로로 승격

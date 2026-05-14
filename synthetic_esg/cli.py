@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .config import GenerationConfig
+from .config import SCALE_PRESETS, GenerationConfig
 from .generators.scaffold import create_phase2_output
 
 
@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument("--profile", type=Path, default=None)
     generate.add_argument("--out-dir", type=Path, required=True)
     generate.add_argument("--seed", type=int, default=42)
-    generate.add_argument("--scale", choices=["smoke", "enterprise", "large", "stress"], default=None)
+    generate.add_argument("--scale", choices=sorted(SCALE_PRESETS), default=None)
     generate.add_argument("--months", type=int, default=None)
     generate.add_argument("--sites", type=int, default=None)
     generate.add_argument("--lines", type=int, default=None)
