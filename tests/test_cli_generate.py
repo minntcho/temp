@@ -43,7 +43,7 @@ class CliGenerateTests(unittest.TestCase):
             report = json.loads((out_dir / "generation_report.json").read_text(encoding="utf-8"))
 
             self.assertEqual(manifest["generator"], "synthetic_esg")
-            self.assertEqual(manifest["phase"], "phase4_output_contract")
+            self.assertEqual(manifest["phase"], "phase5_quality_metadata")
             self.assertEqual(manifest["seed"], 1)
             self.assertEqual(report["status"], "created")
             self.assertEqual(report["output_contract"], ["master", "raw_sources", "truth"])
@@ -152,13 +152,90 @@ class CliGenerateTests(unittest.TestCase):
                 self.assertTrue((out_dir / "raw_sources" / dirname).is_dir(), dirname)
 
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
-            self.assertEqual(manifest["phase"], "phase4_output_contract")
+            self.assertEqual(manifest["phase"], "phase5_quality_metadata")
             self.assertEqual(set(manifest["outputs"]["master_files"]), set(expected_master_files))
             self.assertEqual(set(manifest["outputs"]["truth_files"]), set(expected_truth_files))
             self.assertEqual(
                 manifest["outputs"]["raw_source_dirs"],
                 ["erp", "mes", "ems", "suppliers", "manual", "field_notes", "emails"],
             )
+
+    def test_same_seed_and_profile_produce_same_reproducibility_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            first_out = Path(tmp) / "first"
+            second_out = Path(tmp) / "second"
+
+            for out_dir in (first_out, second_out):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "synthetic_esg",
+                        "generate",
+                        "--profile",
+                        "profiles/lges_smoke.yaml",
+                        "--out-dir",
+                        str(out_dir),
+                        "--seed",
+                        "42",
+                    ],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+
+            first_manifest = json.loads((first_out / "manifest.json").read_text(encoding="utf-8"))
+            second_manifest = json.loads((second_out / "manifest.json").read_text(encoding="utf-8"))
+
+            self.assertEqual(
+                first_manifest["reproducibility"]["config_hash"],
+                second_manifest["reproducibility"]["config_hash"],
+            )
+            self.assertEqual(first_manifest["reproducibility"]["seed"], 42)
+            self.assertEqual(first_manifest["reproducibility"]["profile"], "lges_smoke")
+
+    def test_manifest_declares_truth_relationships_and_noise_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp) / "quality"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "synthetic_esg",
+                    "generate",
+                    "--profile",
+                    "profiles/lges_smoke.yaml",
+                    "--out-dir",
+                    str(out_dir),
+                    "--seed",
+                    "3",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
+            report = json.loads((out_dir / "generation_report.json").read_text(encoding="utf-8"))
+
+            self.assertEqual(
+                manifest["truth_contract"]["relationships"]["source_to_truth_map.truth_activity_id"],
+                "canonical_activity.truth_activity_id",
+            )
+            self.assertEqual(
+                manifest["truth_contract"]["relationships"]["canonical_emissions.truth_activity_id"],
+                "canonical_activity.truth_activity_id",
+            )
+            self.assertEqual(manifest["truth_contract"]["primary_keys"]["canonical_activity.csv"], "truth_activity_id")
+            self.assertEqual(report["quality_checks"]["truth_relationships_declared"], "ok")
+            self.assertEqual(report["quality_checks"]["noise_rates_valid"], "ok")
+            self.assertAlmostEqual(report["noise"]["total_configured_rate"], 0.178)
+            self.assertEqual(report["noise"]["rates"]["unit_error_rate"], 0.03)
 
     def test_phase2_package_skeleton_modules_are_importable(self) -> None:
         module_names = [
