@@ -34,11 +34,36 @@ This repository generates fictional synthetic ESG data inspired by a large batte
 
 ### Raw Source Data
 
-ERP, MES, EMS, 협력사 엑셀, 수기 업로드, 메일, 현장 메모처럼 실제 시스템마다 다른 형태로 관측된 원천 데이터입니다. 이 데이터에는 의도적으로 결측, 단위 오류, 중복, 기간 오류, 사업장 alias, 이상치가 포함될 수 있습니다.
+ERP, MES, EMS, 협력사 제출 파일, 수기 업로드, 메일, 현장 메모처럼 실제 시스템마다 다른 형태로 관측된 원천 데이터입니다. 이 데이터에는 의도적으로 결측, 단위 오류, 중복, 기간 오류, 사업장 alias, 이상치가 포함될 수 있습니다.
 
 ### Truth / Label Data
 
 합성 생성기가 내부적으로 알고 있는 정답 데이터입니다. `truth/`는 처리 결과가 아니라 평가용 라벨입니다. 다른 처리 시스템은 `raw_sources/`를 복원한 뒤 `truth/`와 비교해 품질을 측정할 수 있습니다.
+
+## Quick Start
+
+```bash
+python -m synthetic_esg generate \
+  --profile profiles/lges_smoke.yaml \
+  --out-dir ./out/smoke \
+  --seed 1
+```
+
+대기업 규모 override 예시:
+
+```bash
+python -m synthetic_esg generate \
+  --profile profiles/lges_enterprise.yaml \
+  --scale large \
+  --months 36 \
+  --sites 80 \
+  --lines 500 \
+  --products 300 \
+  --suppliers 2000 \
+  --meters 5000 \
+  --out-dir ./out/lges_large \
+  --seed 42
+```
 
 ## Target Output Layout
 
@@ -73,7 +98,7 @@ out/lges_2026_seed42/
     ems/
       meter_readings_2026_01.jsonl
     suppliers/
-      supplier_energy_report_batch_001.xlsx
+      supplier_energy_report_batch_001.csv
     manual/
       manual_upload_001.csv
     field_notes/
@@ -81,52 +106,6 @@ out/lges_2026_seed42/
     emails/
       email_dump_2026_01.jsonl
 ```
-
-## Current Generation Scripts
-
-Phase 1 keeps the existing generation scripts available while the package structure is introduced in later phases.
-
-### Package CLI
-
-Phase 2 adds the package entrypoint. It currently creates the generation output contract skeleton and metadata files. Later phases will fill the `master/`, `raw_sources/`, and `truth/` directories with profile-driven synthetic data.
-
-```bash
-python -m synthetic_esg generate \
-  --profile profiles/lges_smoke.yaml \
-  --out-dir ./out/smoke \
-  --seed 1
-```
-
-### Generate E-domain Master and Activity Data
-
-```bash
-python generate_esg_dummy_data.py \
-  --out-dir ./dummy_esg \
-  --rows 1000 \
-  --num-entities 5 \
-  --num-sites 20 \
-  --num-products 60 \
-  --num-suppliers 30 \
-  --anomaly-rate 0.03 \
-  --seed 42
-```
-
-### Generate Multi-source Raw Data
-
-```bash
-python generate_multisource_esg_raw.py \
-  --out-dir ./raw_multisource \
-  --rows 80 \
-  --seed 7
-```
-
-생성 파일:
-
-- `erp_energy.csv`
-- `supplier_fuel_sheet.csv`
-- `field_notes.txt`
-- `email_dump.jsonl`
-- `source_manifest.json`
 
 ## Archived Consumer Examples
 
@@ -140,3 +119,4 @@ python generate_multisource_esg_raw.py \
 4. Phase 4: `master/`, `raw_sources/`, `truth/`, `manifest.json` 출력 구조 고정
 5. Phase 5: seed 재현성, truth consistency, noise rate 테스트 추가
 6. Phase 6: smoke, enterprise, large, stress profile과 chunk writer 지원
+7. Phase 7: master/truth/raw source row generation 고도화 및 source mix 기반 partitioning
