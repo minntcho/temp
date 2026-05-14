@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 from synthetic_esg import __version__
 from synthetic_esg.config import GenerationConfig
@@ -59,6 +61,20 @@ TRUTH_FILE_HEADERS = {
 
 RAW_SOURCE_DIRS = ["erp", "mes", "ems", "suppliers", "manual", "field_notes", "emails"]
 
+TRUTH_CONTRACT = {
+    "primary_keys": {
+        "canonical_activity.csv": "truth_activity_id",
+        "canonical_emissions.csv": "truth_emission_id",
+        "source_to_truth_map.csv": ["source_type", "source_ref", "source_row_id"],
+        "injected_anomalies.csv": "anomaly_id",
+    },
+    "relationships": {
+        "source_to_truth_map.truth_activity_id": "canonical_activity.truth_activity_id",
+        "canonical_emissions.truth_activity_id": "canonical_activity.truth_activity_id",
+        "injected_anomalies.truth_activity_id": "canonical_activity.truth_activity_id",
+    },
+}
+
 
 def create_phase2_output(config: GenerationConfig) -> Path:
     config.out_dir.mkdir(parents=True, exist_ok=True)
@@ -71,10 +87,13 @@ def create_phase2_output(config: GenerationConfig) -> Path:
     for filename, headers in TRUTH_FILE_HEADERS.items():
         write_header_csv(config.out_dir / "truth" / filename, headers)
 
+    config_hash = build_config_hash(config)
+    noise_validation = validate_noise_rates(config.noise)
+
     manifest = {
         "generator": "synthetic_esg",
         "generator_version": __version__,
-        "phase": "phase4_output_contract",
+        "phase": "phase5_quality_metadata",
         "seed": config.seed,
         "profile": str(config.profile) if config.profile else None,
         "company": config.company,
@@ -84,6 +103,12 @@ def create_phase2_output(config: GenerationConfig) -> Path:
         "source_mix": config.source_mix,
         "noise": config.noise,
         "output": config.output,
+        "reproducibility": {
+            "seed": config.seed,
+            "profile": config.company.get("profile"),
+            "config_hash": config_hash,
+        },
+        "truth_contract": TRUTH_CONTRACT,
         "outputs": {
             "master": "master/",
             "raw_sources": "raw_sources/",
@@ -95,7 +120,7 @@ def create_phase2_output(config: GenerationConfig) -> Path:
     }
     report = {
         "status": "created",
-        "phase": "phase4_output_contract",
+        "phase": "phase5_quality_metadata",
         "output_contract": OUTPUT_CONTRACT,
         "output_files": {
             "master": len(MASTER_FILE_HEADERS),
@@ -107,8 +132,16 @@ def create_phase2_output(config: GenerationConfig) -> Path:
             "source_count": len(config.source_mix),
             "noise_rule_count": len(config.noise),
         },
+        "quality_checks": {
+            "truth_relationships_declared": "ok",
+            "noise_rates_valid": "ok" if noise_validation["valid"] else "failed",
+        },
+        "noise": {
+            "rates": config.noise,
+            "total_configured_rate": noise_validation["total"],
+        },
         "record_counts": {},
-        "notes": "Phase 3 loads profile configuration and creates the output contract skeleton.",
+        "notes": "Phase 5 records reproducibility, truth contract, and noise validation metadata.",
     }
 
     manifest_path = config.out_dir / "manifest.json"
@@ -123,3 +156,31 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
 
 def write_header_csv(path: Path, headers: list[str]) -> None:
     path.write_text(",".join(headers) + "\n", encoding="utf-8")
+
+
+def build_config_hash(config: GenerationConfig) -> str:
+    payload = {
+        "seed": config.seed,
+        "company": config.company,
+        "period": config.period,
+        "scale": config.scale,
+        "activity_types": config.activity_types,
+        "source_mix": config.source_mix,
+        "noise": config.noise,
+        "output": config.output,
+    }
+    encoded = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def validate_noise_rates(noise: dict[str, Any]) -> dict[str, Any]:
+    total = 0.0
+    valid = True
+    for value in noise.values():
+        if not isinstance(value, (int, float)):
+            valid = False
+            continue
+        if value < 0 or value > 1:
+            valid = False
+        total += float(value)
+    return {"valid": valid and total <= 1.0, "total": round(total, 6)}
