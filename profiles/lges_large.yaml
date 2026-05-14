@@ -1,0 +1,55 @@
+company:
+  name: "LG Energy Solution Synthetic"
+  profile: "lges_large"
+
+period:
+  start_month: "2023-01"
+  end_month: "2026-12"
+
+scale:
+  legal_entities: 18
+  business_units: 8
+  sites: 120
+  production_lines: 900
+  products: 500
+  suppliers: 5000
+  meters: 12000
+
+activity_types:
+  electricity:
+    standard_unit: "kWh"
+    scope: "Scope2"
+  diesel:
+    standard_unit: "L"
+    scope: "Scope1"
+  natural_gas:
+    standard_unit: "Nm3"
+    scope: "Scope1"
+  steam:
+    standard_unit: "ton"
+    scope: "Scope2"
+
+source_mix:
+  erp_energy_csv: 0.25
+  mes_production_csv: 0.15
+  ems_meter_jsonl: 0.30
+  supplier_excel: 0.15
+  manual_csv: 0.05
+  field_notes_txt: 0.05
+  email_jsonl: 0.05
+
+noise:
+  missing_rate: 0.025
+  duplicate_rate: 0.015
+  unit_error_rate: 0.035
+  period_error_rate: 0.015
+  site_alias_rate: 0.10
+  outlier_rate: 0.025
+  negative_amount_rate: 0.004
+  reporting_boundary_error_rate: 0.006
+
+output:
+  chunk_size: 100000
+  partition_by_month: true
+  include_ground_truth: true
+  include_source_to_truth_map: true
