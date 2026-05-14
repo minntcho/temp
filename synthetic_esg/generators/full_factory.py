@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from synthetic_esg.config import GenerationConfig
+from synthetic_esg.naming import generate_entity_name, generate_supplier_name
 
 DEFAULT_ACTIVITIES: dict[str, dict[str, Any]] = {
     "electricity": {"standard_unit": "kWh", "scope": "Scope2", "factor": 0.45, "factor_unit": "kgCO2e/kWh"},
@@ -195,7 +196,7 @@ def build_master_data(
         legal_entities.append(
             {
                 "entity_id": f"ENT-{i:03d}",
-                "entity_name": f"LGES_SYNTH_{country}_{i:03d}",
+                "entity_name": generate_entity_name(country=country, entity_index=i, seed=config.seed),
                 "country": country,
                 "ownership_type": OWNERSHIP_TYPES[(i - 1) % len(OWNERSHIP_TYPES)],
                 "reporting_included": "N" if i % 17 == 0 else "Y",
@@ -260,7 +261,7 @@ def build_master_data(
         suppliers.append(
             {
                 "supplier_id": f"SUP-{i:06d}",
-                "supplier_name": f"Synthetic Supplier {country}-{i:06d}",
+                "supplier_name": generate_supplier_name(country=country, supplier_index=i, seed=config.seed),
                 "country": country,
                 "supplier_tier": ["tier1", "tier2", "tier3"][(i - 1) % 3],
             }
