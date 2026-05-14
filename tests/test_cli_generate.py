@@ -255,6 +255,7 @@ class CliGenerateTests(unittest.TestCase):
             "synthetic_esg.generators.production",
             "synthetic_esg.generators.emissions_truth",
             "synthetic_esg.exporters.master_csv",
+            "synthetic_esg.exporters.chunk_writer",
             "synthetic_esg.exporters.erp_energy",
             "synthetic_esg.exporters.mes_production",
             "synthetic_esg.exporters.ems_meter_jsonl",
