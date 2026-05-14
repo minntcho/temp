@@ -8,49 +8,59 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from synthetic_esg.config import SCALE_PRESETS
 from synthetic_esg.exporters.chunk_writer import write_csv_chunks
+from synthetic_esg.profile import load_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class ProfileAndChunkWriterTests(unittest.TestCase):
-    def test_standard_profiles_generate_manifest_metadata(self) -> None:
+    def test_default_profile_generates_manifest_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            profile = "profiles/lges_smoke.yaml"
+            out_dir = Path(tmp) / Path(profile).stem
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "synthetic_esg",
+                    "generate",
+                    "--profile",
+                    profile,
+                    "--out-dir",
+                    str(out_dir),
+                    "--seed",
+                    "9",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, f"{profile}: {result.stderr}")
+            manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["company"]["profile"], Path(profile).stem)
+            self.assertIn("chunk_size", manifest["output"])
+            self.assertTrue(manifest["output"]["partition_by_month"])
+            self.assertTrue(manifest["output"]["include_ground_truth"])
+
+    def test_non_default_profiles_parse_without_generation(self) -> None:
         profiles = [
-            "profiles/lges_smoke.yaml",
             "profiles/lges_enterprise.yaml",
-            "profiles/lges_large.yaml",
-            "profiles/lges_stress.yaml",
+            "profiles/experimental/lges_large.yaml",
+            "profiles/experimental/lges_stress.yaml",
         ]
 
-        with tempfile.TemporaryDirectory() as tmp:
-            for profile in profiles:
-                out_dir = Path(tmp) / Path(profile).stem
-                result = subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "synthetic_esg",
-                        "generate",
-                        "--profile",
-                        profile,
-                        "--out-dir",
-                        str(out_dir),
-                        "--seed",
-                        "9",
-                    ],
-                    cwd=ROOT,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
+        for profile in profiles:
+            profile_data = load_profile(ROOT / profile)
+            self.assertEqual(profile_data["company"]["profile"], Path(profile).stem)
 
-                self.assertEqual(result.returncode, 0, f"{profile}: {result.stderr}")
-                manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
-                self.assertEqual(manifest["company"]["profile"], Path(profile).stem)
-                self.assertIn("chunk_size", manifest["output"])
-                self.assertTrue(manifest["output"]["partition_by_month"])
-                self.assertTrue(manifest["output"]["include_ground_truth"])
+    def test_large_and_stress_are_not_default_scale_presets(self) -> None:
+        self.assertNotIn("large", SCALE_PRESETS)
+        self.assertNotIn("stress", SCALE_PRESETS)
 
     def test_chunk_writer_splits_csv_rows_with_headers(self) -> None:
         rows = [

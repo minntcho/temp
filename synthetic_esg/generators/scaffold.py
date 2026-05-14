@@ -7,6 +7,7 @@ from typing import Any
 
 from synthetic_esg import __version__
 from synthetic_esg.config import GenerationConfig
+from synthetic_esg.generators.full_factory import populate_output_rows
 
 
 OUTPUT_CONTRACT = ["master", "raw_sources", "truth"]
@@ -87,6 +88,12 @@ def create_phase2_output(config: GenerationConfig) -> Path:
     for filename, headers in TRUTH_FILE_HEADERS.items():
         write_header_csv(config.out_dir / "truth" / filename, headers)
 
+    record_counts = populate_output_rows(
+        config=config,
+        master_headers=MASTER_FILE_HEADERS,
+        truth_headers=TRUTH_FILE_HEADERS,
+    )
+
     config_hash = build_config_hash(config)
     noise_validation = validate_noise_rates(config.noise)
 
@@ -135,13 +142,14 @@ def create_phase2_output(config: GenerationConfig) -> Path:
         "quality_checks": {
             "truth_relationships_declared": "ok",
             "noise_rates_valid": "ok" if noise_validation["valid"] else "failed",
+            "rows_generated": "ok" if any(record_counts.values()) else "failed",
         },
         "noise": {
             "rates": config.noise,
             "total_configured_rate": noise_validation["total"],
         },
-        "record_counts": {},
-        "notes": "Phase 5 records reproducibility, truth contract, and noise validation metadata.",
+        "record_counts": record_counts,
+        "notes": "Phase 6 populates the generation-only output contract with synthetic master, raw source, and truth rows.",
     }
 
     manifest_path = config.out_dir / "manifest.json"
