@@ -27,6 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument("--lines", type=int, default=None)
     generate.add_argument("--products", type=int, default=None)
     generate.add_argument("--suppliers", type=int, default=None)
+    generate.add_argument("--meters", type=int, default=None)
     generate.set_defaults(handler=handle_generate)
 
     return parser
@@ -35,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
 def handle_generate(args: argparse.Namespace) -> int:
     config = GenerationConfig.from_args(args)
     manifest_path = create_phase2_output(config)
-    print(f"[OK] synthetic ESG output contract created: {config.out_dir.resolve()}")
+    print(f"[OK] synthetic ESG data generated: {config.out_dir.resolve()}")
     print(f"[OK] manifest: {manifest_path}")
     return 0
 
