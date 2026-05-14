@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import csv
 import json
-import math
 import random
 from pathlib import Path
 from typing import Any, Iterable
 
 from synthetic_esg.config import GenerationConfig
+from synthetic_esg.distributions import (
+    build_site_profiles,
+    choose_activity_for_site,
+    distribution_stats,
+    monthly_activity_amount,
+    split_monthly_amount,
+)
 from synthetic_esg.naming import generate_entity_name, generate_supplier_name
 
 DEFAULT_ACTIVITIES: dict[str, dict[str, Any]] = {
@@ -49,6 +55,7 @@ SITE_NAMES = [
 ]
 LINE_TYPES = ["electrode_coating_line", "cell_assembly_line", "formation_line", "aging_line", "module_pack_line"]
 PRODUCT_CATEGORIES = ["pouch_cell", "cylindrical_cell", "prismatic_cell", "ev_module", "ess_pack", "bms_component"]
+PRIVATE_MASTER_KEYS = {"_site_profiles"}
 
 
 def populate_output_rows(
@@ -56,7 +63,7 @@ def populate_output_rows(
     config: GenerationConfig,
     master_headers: dict[str, list[str]],
     truth_headers: dict[str, list[str]],
-) -> dict[str, int]:
+) -> dict[str, Any]:
     """Populate the generation-only output contract with synthetic rows.
 
     This writes master data, raw source observations, truth labels, raw-to-truth
@@ -77,10 +84,11 @@ def populate_output_rows(
     source_map: list[dict[str, Any]] = []
     anomalies: list[dict[str, Any]] = []
 
-    counts: dict[str, int] = {}
+    counts: dict[str, Any] = {"__distribution_stats__": distribution_stats(truth_activity)}
     for filename, headers in master_headers.items():
         stem = filename.removesuffix(".csv")
-        counts[f"master/{filename}"] = write_csv(config.out_dir / "master" / filename, headers, masters.get(stem, []))
+        rows = masters.get(stem, []) if stem not in PRIVATE_MASTER_KEYS else []
+        counts[f"master/{filename}"] = write_csv(config.out_dir / "master" / filename, headers, rows)
 
     counts.update(
         export_raw_sources(
@@ -181,7 +189,7 @@ def build_master_data(
     rng: random.Random,
     periods: list[dict[str, Any]],
     activities: dict[str, dict[str, Any]],
-) -> dict[str, list[dict[str, Any]]]:
+) -> dict[str, list[dict[str, Any]] | Any]:
     entity_count = scale_int(config, "legal_entities", default=2)
     bu_count = scale_int(config, "business_units", default=2)
     site_count = scale_int(config, "sites", default=3)
@@ -227,6 +235,7 @@ def build_master_data(
                 "reporting_included": entity["reporting_included"],
             }
         )
+    site_profiles = build_site_profiles(sites, rng)
 
     plant_sites = [site for site in sites if site["site_type"] == "plant"] or sites
     production_lines = []
@@ -267,11 +276,10 @@ def build_master_data(
             }
         )
 
-    activity_names = list(activities)
     meters = []
     for i in range(1, meter_count + 1):
         site = sites[(i - 1) % len(sites)]
-        activity_type = rng.choice(activity_names)
+        activity_type = choose_activity_for_site(str(site["site_type"]), rng)
         meters.append(
             {
                 "meter_id": f"MTR-{i:07d}",
@@ -320,6 +328,7 @@ def build_master_data(
         "products": products,
         "suppliers": suppliers,
         "meters": meters,
+        "_site_profiles": site_profiles,
         "reporting_calendar": [
             {
                 "period_id": row["period_id"],
@@ -340,21 +349,36 @@ def build_truth_data(
     rng: random.Random,
     periods: list[dict[str, Any]],
     activities: dict[str, dict[str, Any]],
-    masters: dict[str, list[dict[str, Any]]],
+    masters: dict[str, list[dict[str, Any]] | Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     sites_by_id = {row["site_id"]: row for row in masters["sites"]}
     factors_by_activity = {row["activity_type"]: row for row in masters["emission_factors"]}
+    site_profiles = masters["_site_profiles"]
+    line_type_by_site: dict[str, str] = {}
+    for line in masters["production_lines"]:
+        line_type_by_site.setdefault(str(line["site_id"]), str(line["line_type"]))
+
+    previous_amount_by_meter: dict[str, float] = {}
     truth_activity = []
     truth_emissions = []
 
     for period in periods:
-        seasonality = 1.0 + 0.08 * math.sin((int(period["month"]) / 12.0) * 2 * math.pi)
         for index, meter in enumerate(masters["meters"], start=1):
-            activity_type = meter["activity_type"]
-            baseline = baseline_amount(activity_type, len(masters["meters"]))
-            amount = round(max(0, rng.gauss(baseline * seasonality, baseline * 0.18)), 6)
-            truth_activity_id = f"ACT-{str(period['period_id']).removeprefix('P')}-{index:07d}"
+            activity_type = str(meter["activity_type"])
+            meter_id = str(meter["meter_id"])
             site = sites_by_id[meter["site_id"]]
+            site_profile = site_profiles[str(meter["site_id"])]
+            amount = monthly_activity_amount(
+                activity_type=activity_type,
+                site_profile=site_profile,
+                month_number=int(period["month"]),
+                rng=rng,
+                line_type=line_type_by_site.get(str(meter["site_id"])),
+                previous_amount=previous_amount_by_meter.get(meter_id),
+            )
+            previous_amount_by_meter[meter_id] = amount
+
+            truth_activity_id = f"ACT-{str(period['period_id']).removeprefix('P')}-{index:07d}"
             truth_activity.append(
                 {
                     "truth_activity_id": truth_activity_id,
@@ -379,22 +403,12 @@ def build_truth_data(
     return truth_activity, truth_emissions
 
 
-def baseline_amount(activity_type: str, meter_count: int) -> float:
-    base = {
-        "electricity": 1_200_000,
-        "diesel": 8_000,
-        "natural_gas": 180_000,
-        "steam": 5_000,
-    }.get(activity_type, 10_000)
-    return max(1.0, base / max(1, meter_count / 85))
-
-
 def export_raw_sources(
     *,
     config: GenerationConfig,
     rng: random.Random,
     periods: list[dict[str, Any]],
-    masters: dict[str, list[dict[str, Any]]],
+    masters: dict[str, list[dict[str, Any]] | Any],
     truth_activity: list[dict[str, Any]],
     source_map: list[dict[str, Any]],
     anomalies: list[dict[str, Any]],
@@ -418,7 +432,7 @@ def export_raw_sources(
 def export_erp(
     config: GenerationConfig,
     rng: random.Random,
-    masters: dict[str, list[dict[str, Any]]],
+    masters: dict[str, list[dict[str, Any]] | Any],
     truth_by_period: dict[str, list[dict[str, Any]]],
     period_by_id: dict[str, str],
     source_map: list[dict[str, Any]],
@@ -475,16 +489,16 @@ def export_ems(
         count = 0
         with path.open("w", encoding="utf-8") as f:
             for index, truth in enumerate(rows, start=1):
-                for reading_index in range(1, 5):
+                readings = split_monthly_amount(float(truth["standardized_amount"]), 4, rng)
+                for reading_index, reading_amount in enumerate(readings, start=1):
                     source_row_id = f"EMS-{period.replace('-', '')}-{index:08d}-{reading_index:03d}"
-                    amount = round(max(0, rng.gauss(float(truth["standardized_amount"]) / 4, 1)), 6)
                     raw = {
                         "source_row_id": source_row_id,
                         "timestamp": f"{period}-{min(28, reading_index * 7):02d}T{rng.randint(0, 23):02d}:00:00Z",
                         "period": period,
                         "site_id": truth["site_id"],
                         "activity_type": truth["activity_type"],
-                        "amount": amount,
+                        "amount": reading_amount,
                         "unit": truth["standardized_unit"],
                     }
                     mutate_raw(raw, config, rng, anomalies, "ems_meter_jsonl", path.name, str(truth["truth_activity_id"]))
@@ -505,7 +519,7 @@ def export_ems(
 def export_mes(
     config: GenerationConfig,
     rng: random.Random,
-    masters: dict[str, list[dict[str, Any]]],
+    masters: dict[str, list[dict[str, Any]] | Any],
     period_by_id: dict[str, str],
 ) -> dict[str, int]:
     counts = {}
@@ -531,7 +545,7 @@ def export_mes(
 def export_supplier_manual_text(
     config: GenerationConfig,
     rng: random.Random,
-    masters: dict[str, list[dict[str, Any]]],
+    masters: dict[str, list[dict[str, Any]] | Any],
     periods: list[str],
 ) -> dict[str, int]:
     counts = {}
