@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+
+# Local generation outputs
+out/
+dummy_esg/
+raw_multisource/
+analysis_*/
+
+# Local Excel artifacts
+*.xlsx

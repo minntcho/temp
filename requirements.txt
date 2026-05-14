@@ -1,2 +1,5 @@
+# Core generation scripts currently use the Python standard library only.
+#
+# Archived consumer examples may need:
 pandas>=2.2.0
 openpyxl>=3.1.0
