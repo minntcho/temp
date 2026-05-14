@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CliGenerateTests(unittest.TestCase):
-    def test_module_generate_creates_phase2_output_contract(self) -> None:
+    def test_module_generate_creates_output_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp) / "smoke"
 
@@ -43,7 +43,7 @@ class CliGenerateTests(unittest.TestCase):
             report = json.loads((out_dir / "generation_report.json").read_text(encoding="utf-8"))
 
             self.assertEqual(manifest["generator"], "synthetic_esg")
-            self.assertEqual(manifest["phase"], "phase3_profile_config")
+            self.assertEqual(manifest["phase"], "phase4_output_contract")
             self.assertEqual(manifest["seed"], 1)
             self.assertEqual(report["status"], "created")
             self.assertEqual(report["output_contract"], ["master", "raw_sources", "truth"])
@@ -94,6 +94,71 @@ class CliGenerateTests(unittest.TestCase):
             self.assertEqual(report["profile"]["company_profile"], "lges_smoke")
             self.assertEqual(report["profile"]["source_count"], 7)
             self.assertEqual(report["profile"]["noise_rule_count"], 8)
+
+    def test_generate_creates_fixed_master_truth_and_raw_source_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp) / "contract"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "synthetic_esg",
+                    "generate",
+                    "--profile",
+                    "profiles/lges_smoke.yaml",
+                    "--out-dir",
+                    str(out_dir),
+                    "--seed",
+                    "11",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            expected_master_files = {
+                "legal_entities.csv": "entity_id,entity_name,country,ownership_type,reporting_included",
+                "business_units.csv": "business_unit_id,business_unit_name,entity_id",
+                "sites.csv": "site_id,site_name,entity_id,country,site_type,reporting_included",
+                "production_lines.csv": "line_id,line_name,site_id,line_type",
+                "products.csv": "product_id,product_name,product_category,main_line_id",
+                "suppliers.csv": "supplier_id,supplier_name,country,supplier_tier",
+                "meters.csv": "meter_id,meter_name,site_id,activity_type,unit",
+                "reporting_calendar.csv": "period_id,year,month,quarter,fiscal_year",
+                "emission_factors.csv": "factor_id,activity_type,unit,scope_category,emission_factor,factor_unit",
+                "unit_conversions.csv": "conversion_id,activity_type,from_unit,to_unit,multiplier,offset",
+            }
+            for filename, header in expected_master_files.items():
+                path = out_dir / "master" / filename
+                self.assertTrue(path.is_file(), filename)
+                self.assertEqual(path.read_text(encoding="utf-8").splitlines()[0], header)
+
+            expected_truth_files = {
+                "canonical_activity.csv": "truth_activity_id,period_id,entity_id,site_id,activity_type,standardized_amount,standardized_unit",
+                "canonical_emissions.csv": "truth_emission_id,truth_activity_id,scope_category,co2e_kg,factor_id",
+                "source_to_truth_map.csv": "source_type,source_ref,source_row_id,truth_activity_id",
+                "injected_anomalies.csv": "anomaly_id,source_type,source_ref,source_row_id,truth_activity_id,anomaly_type",
+            }
+            for filename, header in expected_truth_files.items():
+                path = out_dir / "truth" / filename
+                self.assertTrue(path.is_file(), filename)
+                self.assertEqual(path.read_text(encoding="utf-8").splitlines()[0], header)
+
+            for dirname in ("erp", "mes", "ems", "suppliers", "manual", "field_notes", "emails"):
+                self.assertTrue((out_dir / "raw_sources" / dirname).is_dir(), dirname)
+
+            manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["phase"], "phase4_output_contract")
+            self.assertEqual(set(manifest["outputs"]["master_files"]), set(expected_master_files))
+            self.assertEqual(set(manifest["outputs"]["truth_files"]), set(expected_truth_files))
+            self.assertEqual(
+                manifest["outputs"]["raw_source_dirs"],
+                ["erp", "mes", "ems", "suppliers", "manual", "field_notes", "emails"],
+            )
 
     def test_phase2_package_skeleton_modules_are_importable(self) -> None:
         module_names = [
