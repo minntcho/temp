@@ -1,0 +1,1 @@
+"""Field note text exporter."""

@@ -1,0 +1,1 @@
+"""Energy meter master generation."""

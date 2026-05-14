@@ -1,0 +1,1 @@
+"""Canonical ESG activity generation."""

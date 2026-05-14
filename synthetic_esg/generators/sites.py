@@ -1,0 +1,1 @@
+"""Manufacturing site generation."""

@@ -1,0 +1,1 @@
+"""Period error noise injection."""
