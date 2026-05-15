@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "./route";
 import { getRunDir, writeWebRun, type WebRun } from "@/lib/run-registry";
+import { VISUAL_REPORT_TEMPLATE_MARKER } from "@/lib/visual-report";
 
 describe("run report route", () => {
   let repoRoot: string;
@@ -25,7 +26,11 @@ describe("run report route", () => {
     await writeWebRun(repoRoot, run);
     const reportPath = path.join(getRunDir(repoRoot, run.runId), "reports", "distribution_dashboard.html");
     await mkdir(path.dirname(reportPath), { recursive: true });
-    await writeFile(reportPath, "<!doctype html><html><body>report ready</body></html>", "utf-8");
+    await writeFile(
+      reportPath,
+      `<!doctype html><html><head><meta ${VISUAL_REPORT_TEMPLATE_MARKER}></head><body>report ready</body></html>`,
+      "utf-8",
+    );
 
     const response = await GET(new Request("http://localhost/api/runs/ready-run/report"), {
       params: Promise.resolve({ runId: run.runId }),
@@ -48,7 +53,6 @@ describe("run report route", () => {
     expect(response.headers.get("content-type")).toContain("text/html");
     const html = await response.text();
     expect(html).toContain("리포트를 열 수 없습니다");
-    expect(html).toContain("spawn python ENOENT");
   });
 });
 

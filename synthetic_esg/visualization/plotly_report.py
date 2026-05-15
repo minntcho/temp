@@ -10,6 +10,7 @@ from plotly.io import to_html
 
 
 REPORT_COLORWAY = ["#0f766e", "#2563eb", "#b45309", "#6d28d9", "#b42318", "#64748b"]
+REPORT_TEMPLATE_VERSION = "explainable-ko-v1"
 
 FIGURE_METADATA: dict[str, dict[str, str]] = {
     "활동량 분포": {
@@ -260,6 +261,7 @@ def render_dashboard(
 <head>
   <meta charset=\"utf-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+  <meta name=\"synthetic-esg-report-template\" content=\"{REPORT_TEMPLATE_VERSION}\">
   <title>{escape_html(title)}</title>
   <style>
     {report_css()}
