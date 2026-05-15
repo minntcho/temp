@@ -1,7 +1,5 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
-
-import { getRepoRootFromWebCwd, getRunDir, readWebRun } from "@/lib/run-registry";
+import { getRepoRootFromWebCwd, getRunDir, getRunFilePath, readWebRun } from "@/lib/run-registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +14,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
 
   try {
     const run = await readWebRun(repoRoot, runId);
-    const reportPath = path.join(getRunDir(repoRoot, runId), run.visualReportPath);
+    const reportPath = getRunFilePath(getRunDir(repoRoot, runId), run.visualReportPath);
     const html = await readFile(reportPath, "utf-8");
     return new Response(html, {
       headers: {

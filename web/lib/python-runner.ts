@@ -54,13 +54,15 @@ export function buildSmokeRunPlan({
   now,
   pythonCommand,
   seed,
+  uniqueSuffix,
 }: {
   repoRoot: string;
   now: Date;
   pythonCommand?: string;
   seed: number;
+  uniqueSuffix?: string;
 }): SmokeRunPlan {
-  const runId = buildRunId({ now, seed });
+  const runId = buildRunId({ now, seed, uniqueSuffix });
   const runDir = `${WEB_RUNS_RELATIVE_DIR}/${runId}`;
   const python = pythonCommand ?? process.env.SYNTHETIC_ESG_PYTHON ?? process.env.PYTHON ?? "python";
   const generateArgs = [
