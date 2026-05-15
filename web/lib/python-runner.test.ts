@@ -51,7 +51,7 @@ describe("python runner", () => {
       "--out-dir",
       "out/web-runs/20260515-143012-345-seed7-abc123/reports",
       "--plotly-js",
-      "cdn",
+      "directory",
     ]);
   });
 
