@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -49,10 +50,12 @@ export function buildRunId({
   now,
   seed,
   timeZone = process.env.SYNTHETIC_ESG_RUN_TIME_ZONE ?? DEFAULT_RUN_ID_TIME_ZONE,
+  uniqueSuffix = randomBytes(3).toString("hex"),
 }: {
   now: Date;
   seed: number;
   timeZone?: string;
+  uniqueSuffix?: string;
 }): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
@@ -66,7 +69,11 @@ export function buildRunId({
   }).formatToParts(now);
   const byType = new Map(parts.map((part) => [part.type, part.value]));
   const timestamp = `${byType.get("year")}${byType.get("month")}${byType.get("day")}-${byType.get("hour")}${byType.get("minute")}${byType.get("second")}`;
-  return `${timestamp}-seed${seed}`;
+  const millisecond = String(now.getMilliseconds()).padStart(3, "0");
+  if (!/^[A-Za-z0-9]+$/.test(uniqueSuffix)) {
+    throw new Error("Run id suffix must be alphanumeric");
+  }
+  return `${timestamp}-${millisecond}-seed${seed}-${uniqueSuffix}`;
 }
 
 export function isValidRunId(runId: string): boolean {
@@ -88,6 +95,18 @@ export function getRunDir(repoRoot: string, runId: string): string {
     throw new Error(`Invalid run id: ${runId}`);
   }
   return runDir;
+}
+
+export function getRunFilePath(runDir: string, relativePath: string): string {
+  if (path.isAbsolute(relativePath)) {
+    throw new Error(`Invalid run file path: ${relativePath}`);
+  }
+  const resolvedPath = path.resolve(runDir, relativePath);
+  const relative = path.relative(runDir, resolvedPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Invalid run file path: ${relativePath}`);
+  }
+  return resolvedPath;
 }
 
 export async function writeWebRun(repoRoot: string, run: WebRun): Promise<void> {
@@ -131,8 +150,8 @@ export async function readRunBundle(repoRoot: string, runId: string): Promise<Ru
   const run = await readWebRun(repoRoot, runId);
   const runDir = getRunDir(repoRoot, runId);
   const [manifest, generationReport, files] = await Promise.all([
-    readOptionalJsonFile(path.join(runDir, run.manifestPath)),
-    readOptionalJsonFile(path.join(runDir, run.generationReportPath)),
+    readOptionalJsonFile(getRunFilePath(runDir, run.manifestPath)),
+    readOptionalJsonFile(getRunFilePath(runDir, run.generationReportPath)),
     listRunFiles(runDir),
   ]);
 

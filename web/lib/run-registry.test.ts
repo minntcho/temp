@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   buildRunId,
+  getRunFilePath,
   isValidRunId,
   listRuns,
   readRunBundle,
@@ -27,15 +28,38 @@ describe("run registry", () => {
     const runId = buildRunId({
       now: new Date("2026-05-15T05:30:12.345Z"),
       seed: 42,
+      uniqueSuffix: "abc123",
     });
 
-    expect(runId).toBe("20260515-143012-seed42");
+    expect(runId).toBe("20260515-143012-345-seed42-abc123");
+  });
+
+  it("keeps run ids unique for repeated runs in the same second with the same seed", () => {
+    const now = new Date("2026-05-15T05:30:12.345Z");
+
+    const runIds = new Set([
+      buildRunId({ now, seed: 42 }),
+      buildRunId({ now, seed: 42 }),
+      buildRunId({ now, seed: 42 }),
+    ]);
+
+    expect(runIds.size).toBe(3);
   });
 
   it("rejects path traversal run ids", () => {
     expect(isValidRunId("20260515-053012-seed42")).toBe(true);
     expect(isValidRunId("../20260515-053012-seed42")).toBe(false);
     expect(isValidRunId("20260515/053012-seed42")).toBe(false);
+  });
+
+  it("resolves run files only when they stay inside the run directory", () => {
+    const runDir = path.join(repoRoot, "out", "web-runs", "safe-run");
+
+    expect(getRunFilePath(runDir, "reports/distribution_dashboard.html")).toBe(
+      path.join(runDir, "reports", "distribution_dashboard.html"),
+    );
+    expect(() => getRunFilePath(runDir, "../secret.txt")).toThrow("Invalid run file path");
+    expect(() => getRunFilePath(runDir, "reports/../../secret.txt")).toThrow("Invalid run file path");
   });
 
   it("lists persisted runs newest first", async () => {

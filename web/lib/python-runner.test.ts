@@ -21,10 +21,11 @@ describe("python runner", () => {
       repoRoot: "C:\\repo",
       now: new Date("2026-05-15T05:30:12.345Z"),
       seed: 7,
+      uniqueSuffix: "abc123",
     });
 
-    expect(plan.run.runId).toBe("20260515-143012-seed7");
-    expect(plan.run.runDir).toBe("out/web-runs/20260515-143012-seed7");
+    expect(plan.run.runId).toBe("20260515-143012-345-seed7-abc123");
+    expect(plan.run.runDir).toBe("out/web-runs/20260515-143012-345-seed7-abc123");
     expect(plan.run.visualReportPath).toBe("reports/distribution_dashboard.html");
     expect(plan.generate).toEqual({
       command: "python",
@@ -35,7 +36,7 @@ describe("python runner", () => {
         "--profile",
         "profiles/lges_smoke.yaml",
         "--out-dir",
-        "out/web-runs/20260515-143012-seed7",
+        "out/web-runs/20260515-143012-345-seed7-abc123",
         "--seed",
         "7",
       ],
@@ -46,9 +47,9 @@ describe("python runner", () => {
       "synthetic_esg",
       "visualize",
       "--run-dir",
-      "out/web-runs/20260515-143012-seed7",
+      "out/web-runs/20260515-143012-345-seed7-abc123",
       "--out-dir",
-      "out/web-runs/20260515-143012-seed7/reports",
+      "out/web-runs/20260515-143012-345-seed7-abc123/reports",
       "--plotly-js",
       "cdn",
     ]);
@@ -60,6 +61,7 @@ describe("python runner", () => {
       now: new Date("2026-05-15T05:30:12.345Z"),
       pythonCommand: "C:\\Python311\\python.exe",
       seed: 7,
+      uniqueSuffix: "abc123",
     });
 
     expect(plan.generate.command).toBe("C:\\Python311\\python.exe");
