@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .config import SCALE_PRESETS, GenerationConfig
 from .generators.scaffold import create_phase2_output
+from .visualization.plotly_report import build_visual_report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,6 +31,15 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument("--meters", type=int, default=None)
     generate.set_defaults(handler=handle_generate)
 
+    visualize = subparsers.add_parser(
+        "visualize",
+        help="Create a Plotly HTML distribution report from a generated run directory",
+    )
+    visualize.add_argument("--run-dir", type=Path, required=True)
+    visualize.add_argument("--out-dir", type=Path, default=None)
+    visualize.add_argument("--plotly-js", choices=["cdn", "inline"], default="cdn")
+    visualize.set_defaults(handler=handle_visualize)
+
     return parser
 
 
@@ -38,6 +48,13 @@ def handle_generate(args: argparse.Namespace) -> int:
     manifest_path = create_phase2_output(config)
     print(f"[OK] synthetic ESG data generated: {config.out_dir.resolve()}")
     print(f"[OK] manifest: {manifest_path}")
+    return 0
+
+
+def handle_visualize(args: argparse.Namespace) -> int:
+    include_plotlyjs = True if args.plotly_js == "inline" else "cdn"
+    report_path = build_visual_report(args.run_dir, args.out_dir, include_plotlyjs=include_plotlyjs)
+    print(f"[OK] Plotly visual report created: {report_path.resolve()}")
     return 0
 
 
