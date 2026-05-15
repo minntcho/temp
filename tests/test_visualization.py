@@ -59,7 +59,7 @@ class VisualizationTests(unittest.TestCase):
             html = report_path.read_text(encoding="utf-8").lower()
             self.assertIn('html lang="ko"', html)
             self.assertIn('name="synthetic-esg-report-template"', html)
-            self.assertIn('content="explainable-ko-v1"', html)
+            self.assertIn('content="explainable-ko-v2-local-plotly"', html)
             self.assertIn("synthetic esg 데이터 분포 리포트", html)
             self.assertIn("plotly", html)
             self.assertIn('src="plotly.min.js"', html)

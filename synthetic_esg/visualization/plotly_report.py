@@ -11,7 +11,7 @@ from plotly.io import to_html
 
 
 REPORT_COLORWAY = ["#0f766e", "#2563eb", "#b45309", "#6d28d9", "#b42318", "#64748b"]
-REPORT_TEMPLATE_VERSION = "explainable-ko-v1"
+REPORT_TEMPLATE_VERSION = "explainable-ko-v2-local-plotly"
 
 FIGURE_METADATA: dict[str, dict[str, str]] = {
     "활동량 분포": {

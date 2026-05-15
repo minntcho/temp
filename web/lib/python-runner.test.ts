@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSmokeRunPlan, normalizeRunRequest } from "@/lib/python-runner";
+import { buildRefreshVisualReportCommand, buildSmokeRunPlan, normalizeRunRequest } from "@/lib/python-runner";
 
 describe("python runner", () => {
   it("normalizes empty create-run requests to the smoke profile and seed 42", () => {
@@ -67,5 +67,46 @@ describe("python runner", () => {
     expect(plan.generate.command).toBe("C:\\Python311\\python.exe");
     expect(plan.visualize.command).toBe("C:\\Python311\\python.exe");
     expect(plan.run.command.startsWith("C:\\Python311\\python.exe -m synthetic_esg generate")).toBe(true);
+  });
+
+  it("refreshes stale visual reports with the local Plotly bundle", () => {
+    const command = buildRefreshVisualReportCommand({
+      pythonCommand: "python",
+      repoRoot: "C:\\repo",
+      run: {
+        runId: "ready-run",
+        status: "succeeded",
+        profile: "profiles/lges_smoke.yaml",
+        profileName: "lges_smoke",
+        seed: 7,
+        command: "python -m synthetic_esg generate",
+        visualizeCommand: "python -m synthetic_esg visualize",
+        startedAt: "2026-05-15T03:00:00.000Z",
+        finishedAt: "2026-05-15T03:00:01.000Z",
+        durationMs: 1000,
+        runDir: "out/web-runs/ready-run",
+        manifestPath: "manifest.json",
+        generationReportPath: "generation_report.json",
+        visualReportPath: "reports/distribution_dashboard.html",
+        stdout: "",
+        stderr: "",
+      },
+    });
+
+    expect(command).toEqual({
+      command: "python",
+      args: [
+        "-m",
+        "synthetic_esg",
+        "visualize",
+        "--run-dir",
+        "out/web-runs/ready-run",
+        "--out-dir",
+        "out/web-runs/ready-run/reports",
+        "--plotly-js",
+        "directory",
+      ],
+      cwd: "C:\\repo",
+    });
   });
 });

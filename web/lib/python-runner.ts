@@ -76,17 +76,7 @@ export function buildSmokeRunPlan({
     "--seed",
     String(seed),
   ];
-  const visualizeArgs = [
-    "-m",
-    "synthetic_esg",
-    "visualize",
-    "--run-dir",
-    runDir,
-    "--out-dir",
-    `${runDir}/reports`,
-    "--plotly-js",
-    "directory",
-  ];
+  const visualizeArgs = buildVisualizeArgs(runDir);
 
   return {
     run: {
@@ -164,21 +154,37 @@ export async function createSmokeRun(repoRoot: string, input: CreateRunRequest):
 }
 
 export async function refreshVisualReport(repoRoot: string, run: WebRun): Promise<void> {
-  await runCommand({
-    command: resolvePythonCommand(),
-    args: [
-      "-m",
-      "synthetic_esg",
-      "visualize",
-      "--run-dir",
-      run.runDir,
-      "--out-dir",
-      `${run.runDir}/reports`,
-      "--plotly-js",
-      "cdn",
-    ],
+  await runCommand(buildRefreshVisualReportCommand({ repoRoot, run }));
+}
+
+export function buildRefreshVisualReportCommand({
+  pythonCommand,
+  repoRoot,
+  run,
+}: {
+  pythonCommand?: string;
+  repoRoot: string;
+  run: WebRun;
+}): CommandSpec {
+  return {
+    command: resolvePythonCommand(pythonCommand),
+    args: buildVisualizeArgs(run.runDir),
     cwd: repoRoot,
-  });
+  };
+}
+
+function buildVisualizeArgs(runDir: string): string[] {
+  return [
+    "-m",
+    "synthetic_esg",
+    "visualize",
+    "--run-dir",
+    runDir,
+    "--out-dir",
+    `${runDir}/reports`,
+    "--plotly-js",
+    "directory",
+  ];
 }
 
 function runCommand(commandSpec: CommandSpec): Promise<{ stdout: string; stderr: string }> {
