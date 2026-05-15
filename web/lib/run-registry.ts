@@ -109,6 +109,17 @@ export function getRunFilePath(runDir: string, relativePath: string): string {
   return resolvedPath;
 }
 
+export async function hasRunFile(repoRoot: string, run: WebRun, relativePath: string): Promise<boolean> {
+  try {
+    const runDir = getRunDir(repoRoot, run.runId);
+    const filePath = getRunFilePath(runDir, relativePath);
+    const info = await stat(filePath);
+    return info.isFile();
+  } catch {
+    return false;
+  }
+}
+
 export async function writeWebRun(repoRoot: string, run: WebRun): Promise<void> {
   const runDir = getRunDir(repoRoot, run.runId);
   await mkdir(runDir, { recursive: true });
