@@ -12,76 +12,76 @@ from plotly.io import to_html
 REPORT_COLORWAY = ["#0f766e", "#2563eb", "#b45309", "#6d28d9", "#b42318", "#64748b"]
 
 FIGURE_METADATA: dict[str, dict[str, str]] = {
-    "Activity Amount Histogram": {
-        "chart_type": "Histogram",
-        "purpose": "Shows where generated activity amounts are concentrated.",
-        "why": "Run this to check whether generated values cluster in a plausible range or pile up in an unnatural way.",
-        "read": "Tall bars show ranges that contain many records. A long right tail or isolated bar can point to unusually large generated values.",
-        "check": "If the far-right values look too separated, compare them with activity type, site type, and period in the next charts.",
+    "활동량 분포": {
+        "chart_type": "히스토그램",
+        "purpose": "생성된 활동량 값이 어느 범위에 주로 모여 있는지 보여줍니다.",
+        "why": "생성 값이 자연스러운 범위에 모여 있는지, 특정 구간에 비정상적으로 몰려 있지는 않은지 확인하기 위해 실행합니다.",
+        "read": "막대가 높을수록 해당 범위에 레코드가 많다는 뜻입니다. 오른쪽 꼬리가 길거나 외딴 막대가 보이면 유난히 큰 생성 값이 있다는 신호일 수 있습니다.",
+        "check": "가장 오른쪽 값들이 지나치게 떨어져 보이면 다음 차트에서 활동 유형, 사업장 유형, 기간과 함께 비교해 보세요.",
     },
-    "Activity Amount Box Plot": {
-        "chart_type": "Box plot",
-        "purpose": "Compares typical ranges and outliers by activity type.",
-        "why": "Run this to see whether one activity type is much wider, smaller, or more extreme than the others.",
-        "read": "The box shows the usual middle range. Points beyond the whiskers are outliers that deserve a closer look.",
-        "check": "Large outliers should be checked against source files to decide whether they are intended stress data or accidental noise.",
+    "활동량 상자 그림": {
+        "chart_type": "상자 그림",
+        "purpose": "활동 유형별 일반적인 범위와 이상치를 비교합니다.",
+        "why": "특정 활동 유형의 값이 다른 유형보다 훨씬 넓거나 작거나 극단적인지 보기 위해 실행합니다.",
+        "read": "상자는 보통 값들이 모여 있는 중간 범위를 나타냅니다. 수염 밖의 점은 더 자세히 확인할 필요가 있는 이상치입니다.",
+        "check": "큰 이상치는 의도한 스트레스 데이터인지, 우연히 들어간 노이즈인지 판단하기 위해 원천 파일과 비교해 보세요.",
     },
-    "Site Type Distribution": {
-        "chart_type": "Grouped box plot",
-        "purpose": "Checks whether site categories have noticeably different activity ranges.",
-        "why": "Run this to confirm that plants, warehouses, and other site types produce different but reasonable activity patterns.",
-        "read": "Compare boxes within each site type. Large separation can be expected for some site types, but extreme gaps may need review.",
-        "check": "If one site type dominates, inspect site metadata and source mix before treating the pattern as valid.",
+    "사업장 유형별 분포": {
+        "chart_type": "그룹 상자 그림",
+        "purpose": "사업장 유형별 활동량 범위가 눈에 띄게 다른지 확인합니다.",
+        "why": "공장, 창고 등 사업장 유형마다 서로 다르지만 납득 가능한 활동 패턴이 만들어졌는지 확인하기 위해 실행합니다.",
+        "read": "각 사업장 유형 안의 상자들을 비교합니다. 일부 유형에서는 차이가 클 수 있지만, 극단적인 간격은 검토가 필요합니다.",
+        "check": "한 사업장 유형이 패턴을 과도하게 좌우한다면, 그 패턴을 유효하다고 보기 전에 사업장 메타데이터와 원천 구성 비율을 확인하세요.",
     },
-    "Monthly Activity Trend": {
-        "chart_type": "Line chart",
-        "purpose": "Shows whether generated activity totals move plausibly over time.",
-        "why": "Run this to find sudden jumps, drops, or flat lines that may indicate unrealistic generation behavior.",
-        "read": "Each line is an activity type. A smooth change is usually easier to trust than abrupt movement without a known reason.",
-        "check": "If a line jumps sharply, compare the period with injected anomalies and source record counts.",
+    "월별 활동량 추이": {
+        "chart_type": "선 그래프",
+        "purpose": "생성된 활동량 합계가 시간 흐름에 따라 자연스럽게 움직이는지 보여줍니다.",
+        "why": "현실적이지 않은 생성 동작을 의심하게 만드는 급등, 급락, 평평한 구간을 찾기 위해 실행합니다.",
+        "read": "각 선은 하나의 활동 유형입니다. 알려진 이유 없이 갑자기 움직이는 선보다 완만하게 변하는 선이 보통 더 신뢰하기 쉽습니다.",
+        "check": "특정 선이 급격히 튀면 해당 기간의 주입된 이상 패턴과 원천 레코드 수를 함께 비교하세요.",
     },
 }
 
 GLOSSARY: dict[str, dict[str, str]] = {
     "distribution": {
-        "term": "Distribution",
-        "definition": "How values are spread across a range.",
-        "context": "In this report, distribution helps reveal whether generated values look balanced, clustered, or unusually extreme.",
+        "term": "분포",
+        "definition": "값들이 어떤 범위에 얼마나 퍼져 있는지를 뜻합니다.",
+        "context": "이 리포트에서는 생성 값이 균형 있게 퍼졌는지, 한곳에 몰렸는지, 지나치게 극단적인지 판단하는 데 사용합니다.",
     },
     "outlier": {
-        "term": "Outlier",
-        "definition": "A value that is much larger or smaller than most other values.",
-        "context": "An outlier can be a real rare case, an injected anomaly, or a sign that generated data needs review.",
+        "term": "이상치",
+        "definition": "대부분의 값보다 훨씬 크거나 작은 값을 뜻합니다.",
+        "context": "이상치는 실제로 드문 사례일 수도 있고, 의도적으로 주입한 이상 패턴이거나 생성 데이터 검토가 필요하다는 신호일 수도 있습니다.",
     },
     "log-scale": {
-        "term": "Log scale",
-        "definition": "An axis scale that compresses very large ranges so small and large values can be compared together.",
-        "context": "Several ESG activity values differ by orders of magnitude, so log scale makes the chart readable.",
+        "term": "로그 축",
+        "definition": "매우 큰 값의 범위를 압축해 작은 값과 큰 값을 함께 비교할 수 있게 하는 축입니다.",
+        "context": "ESG 활동량은 값의 규모 차이가 크게 날 수 있어, 로그 축을 쓰면 차트를 더 읽기 쉬워집니다.",
     },
     "histogram": {
-        "term": "Histogram",
-        "definition": "A chart that groups numeric values into ranges and counts how many records fall in each range.",
-        "context": "It answers the question: where do most generated activity amounts land?",
+        "term": "히스토그램",
+        "definition": "숫자 값을 여러 범위로 나누고 각 범위에 몇 개의 레코드가 들어가는지 세는 차트입니다.",
+        "context": "생성된 활동량이 주로 어느 구간에 놓이는지 답해 줍니다.",
     },
     "box-plot": {
-        "term": "Box plot",
-        "definition": "A compact chart for comparing typical ranges, spread, and outliers.",
-        "context": "It helps compare activity types without reading every individual row.",
+        "term": "상자 그림",
+        "definition": "일반적인 범위, 퍼짐 정도, 이상치를 한눈에 비교하는 압축된 차트입니다.",
+        "context": "모든 행을 직접 읽지 않아도 활동 유형별 차이를 비교할 수 있게 해 줍니다.",
     },
     "trend": {
-        "term": "Trend",
-        "definition": "A pattern of movement over time.",
-        "context": "The trend chart checks whether monthly totals move in a plausible direction.",
+        "term": "추이",
+        "definition": "시간이 지나면서 값이 움직이는 패턴을 뜻합니다.",
+        "context": "추이 차트는 월별 합계가 납득 가능한 방향으로 움직이는지 확인합니다.",
     },
     "activity-type": {
-        "term": "Activity type",
-        "definition": "The kind of ESG activity being measured, such as electricity, gas, steam, or diesel.",
-        "context": "Comparing activity types helps spot whether one generated source behaves differently from the rest.",
+        "term": "활동 유형",
+        "definition": "전기, 가스, 스팀, 경유처럼 측정 대상이 되는 ESG 활동의 종류입니다.",
+        "context": "활동 유형을 비교하면 특정 생성 소스만 다른 방식으로 움직이는지 발견할 수 있습니다.",
     },
     "standardized-amount": {
-        "term": "Standardized amount",
-        "definition": "A value converted into a common unit so records from different sources can be compared.",
-        "context": "This report uses standardized amounts to compare generated activity records consistently.",
+        "term": "표준화된 활동량",
+        "definition": "서로 다른 원천의 레코드를 비교할 수 있도록 공통 단위로 변환한 값입니다.",
+        "context": "이 리포트는 표준화된 활동량을 기준으로 생성된 활동 레코드를 일관되게 비교합니다.",
     },
 }
 
@@ -97,14 +97,14 @@ def build_visual_report(run_dir: Path, out_dir: Path | None = None, *, include_p
     joined_rows = join_activity_with_sites(activity_rows, site_rows)
 
     figures = [
-        ("Activity Amount Histogram", activity_histogram(joined_rows)),
-        ("Activity Amount Box Plot", activity_boxplot(joined_rows)),
-        ("Site Type Distribution", site_type_boxplot(joined_rows)),
-        ("Monthly Activity Trend", monthly_trend(joined_rows)),
+        ("활동량 분포", activity_histogram(joined_rows)),
+        ("활동량 상자 그림", activity_boxplot(joined_rows)),
+        ("사업장 유형별 분포", site_type_boxplot(joined_rows)),
+        ("월별 활동량 추이", monthly_trend(joined_rows)),
     ]
 
     html = render_dashboard(
-        title="Synthetic ESG Distribution Report",
+        title="Synthetic ESG 데이터 분포 리포트",
         run_dir=run_dir,
         distribution_stats=report.get("distribution_stats", {}),
         record_counts=report.get("record_counts", {}),
@@ -159,9 +159,9 @@ def activity_histogram(rows: list[dict[str, Any]]) -> go.Figure:
         values = [row["standardized_amount"] for row in rows if row.get("activity_type") == activity_type]
         fig.add_trace(go.Histogram(x=values, name=activity_type, opacity=0.72, nbinsx=60))
     fig.update_layout(
-        title="Activity Amount Distribution",
-        xaxis_title="Standardized activity amount",
-        yaxis_title="Records",
+        title="활동량 분포",
+        xaxis_title="표준화된 활동량",
+        yaxis_title="레코드 수",
         barmode="overlay",
         yaxis_type="log",
     )
@@ -174,8 +174,8 @@ def activity_boxplot(rows: list[dict[str, Any]]) -> go.Figure:
         values = [row["standardized_amount"] for row in rows if row.get("activity_type") == activity_type]
         fig.add_trace(go.Box(y=values, name=activity_type, boxpoints="outliers"))
     fig.update_layout(
-        title="Activity Amount Box Plot",
-        yaxis_title="Standardized activity amount",
+        title="활동량 상자 그림",
+        yaxis_title="표준화된 활동량",
         yaxis_type="log",
     )
     return fig
@@ -194,9 +194,9 @@ def site_type_boxplot(rows: list[dict[str, Any]]) -> go.Figure:
                 y_values.append(row["standardized_amount"])
         fig.add_trace(go.Box(x=x_values, y=y_values, name=activity_type, boxpoints=False))
     fig.update_layout(
-        title="Site Type by Activity Distribution",
-        xaxis_title="Site type",
-        yaxis_title="Standardized activity amount",
+        title="사업장 유형별 활동량 분포",
+        xaxis_title="사업장 유형",
+        yaxis_title="표준화된 활동량",
         yaxis_type="log",
         boxmode="group",
     )
@@ -222,9 +222,9 @@ def monthly_trend(rows: list[dict[str, Any]]) -> go.Figure:
             )
         )
     fig.update_layout(
-        title="Monthly Activity Trend",
-        xaxis_title="Period",
-        yaxis_title="Total standardized activity amount",
+        title="월별 활동량 추이",
+        xaxis_title="기간",
+        yaxis_title="표준화된 활동량 합계",
     )
     return fig
 
@@ -256,7 +256,7 @@ def render_dashboard(
         )
 
     return f"""<!doctype html>
-<html lang=\"en\">
+<html lang=\"ko\">
 <head>
   <meta charset=\"utf-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
@@ -273,32 +273,31 @@ def render_dashboard(
           <p class=\"eyebrow\">Synthetic ESG</p>
           <h1 id=\"report-title\">{escape_html(title)}</h1>
           <p class=\"subtitle\">
-            Analysis reading guide for checking whether generated ESG activity data has plausible ranges,
-            patterns, and follow-up signals.
+            생성된 ESG 활동 데이터의 범위, 패턴, 추가 확인 지점을 함께 살펴보기 위한 분석 리포트입니다.
           </p>
         </div>
-        <div class=\"summary-chips\" aria-label=\"Report summary\">
-          <span>{len(figures)} analyses</span>
-          <span>{record_total} recorded rows</span>
+        <div class=\"summary-chips\" aria-label=\"리포트 요약\">
+          <span>{len(figures)}개 분석</span>
+          <span>{record_total}개 레코드</span>
           <span>{escape_html(run_dir.name or str(run_dir))}</span>
         </div>
       </header>
 
       <section class=\"guide-card\" aria-labelledby=\"guide-title\">
-        <p class=\"eyebrow\">Analysis reading guide</p>
-        <h2 id=\"guide-title\">How to use this report</h2>
+        <p class=\"eyebrow\">분석 읽기 가이드</p>
+        <h2 id=\"guide-title\">이 리포트를 읽는 방법</h2>
         <div class=\"guide-grid\">
           <div>
-            <h3>1. Start with the chart question</h3>
-            <p>Each card explains why the analysis is run before showing the Plotly chart.</p>
+            <h3>1. 차트의 질문부터 확인</h3>
+            <p>각 카드는 Plotly 차트를 보여주기 전에 해당 분석을 왜 실행하는지 먼저 설명합니다.</p>
           </div>
           <div>
-            <h3>2. Read the follow-up check</h3>
-            <p>Use the follow-up note to decide which source, site, period, or activity type needs review.</p>
+            <h3>2. 후속 확인 지점 읽기</h3>
+            <p>후속 메모를 기준으로 어떤 원천, 사업장, 기간, 활동 유형을 다시 봐야 할지 결정합니다.</p>
           </div>
           <div>
-            <h3>3. Open term help as needed</h3>
-            <p>Terms with dotted underlines can be opened by hover, click, tap, or keyboard focus.</p>
+            <h3>3. 필요한 용어 도움말 열기</h3>
+            <p>점선 밑줄이 있는 용어는 호버, 클릭, 탭, 키보드 포커스로 설명을 열 수 있습니다.</p>
           </div>
         </div>
       </section>
@@ -337,11 +336,11 @@ def render_analysis_card(index: int, heading: str, plot_html: str) -> str:
     metadata = FIGURE_METADATA.get(
         heading,
         {
-            "chart_type": "Plotly chart",
-            "purpose": "Shows a generated ESG data pattern.",
-            "why": "Run this to inspect generated data quality.",
-            "read": "Read the chart by comparing the main visual patterns.",
-            "check": "Review source files if the pattern looks unexpected.",
+            "chart_type": "Plotly 차트",
+            "purpose": "생성된 ESG 데이터 패턴을 보여줍니다.",
+            "why": "생성 데이터 품질을 확인하기 위해 실행합니다.",
+            "read": "주요 시각 패턴을 서로 비교하며 읽습니다.",
+            "check": "패턴이 예상과 다르면 원천 파일을 함께 검토하세요.",
         },
     )
     section_id = slugify(heading)
@@ -349,7 +348,7 @@ def render_analysis_card(index: int, heading: str, plot_html: str) -> str:
       <section class=\"analysis-card\" id=\"{section_id}\" aria-labelledby=\"{section_id}-title\">
         <div class=\"analysis-heading\">
           <div>
-            <p class=\"eyebrow\">Analysis {index}</p>
+            <p class=\"eyebrow\">분석 {index}</p>
             <h2 id=\"{section_id}-title\">{escape_html(heading)}</h2>
             <p class=\"analysis-purpose\">{escape_html(metadata["purpose"])}</p>
           </div>
@@ -357,15 +356,15 @@ def render_analysis_card(index: int, heading: str, plot_html: str) -> str:
         </div>
         <div class=\"analysis-notes\">
           <div class=\"note-block why-run-this\">
-            <h3>Why run this?</h3>
+            <h3>왜 실행하나?</h3>
             <p>{escape_html(metadata["why"])}</p>
           </div>
           <div class=\"note-block how-to-read-this\">
-            <h3>How to read this</h3>
+            <h3>어떻게 읽나</h3>
             <p>{escape_html(metadata["read"])}</p>
           </div>
           <div class=\"note-block follow-up what-to-check-next\">
-            <h3>What should I check next?</h3>
+            <h3>다음에 무엇을 확인하나?</h3>
             <p>{escape_html(metadata["check"])}</p>
           </div>
         </div>
@@ -379,15 +378,15 @@ def render_glossary_panel() -> str:
     return f"""
       <section class=\"glossary-panel\" aria-labelledby=\"glossary-title\">
         <div>
-          <p class=\"eyebrow\">Term help</p>
-          <h2 id=\"glossary-title\">Open explanations as you read</h2>
+          <p class=\"eyebrow\">용어 도움말</p>
+          <h2 id=\"glossary-title\">읽으면서 설명 열기</h2>
           <p>
-            Specialized terms are available inline by hover, click, tap, or keyboard focus.
-            {render_term_trigger("distribution")}, {render_term_trigger("outlier")}, and
-            {render_term_trigger("log-scale")} are common starting points.
+            주요 용어는 호버, 클릭, 탭, 키보드 포커스로 바로 설명을 확인할 수 있습니다.
+            {render_term_trigger("distribution")}, {render_term_trigger("outlier")},
+            {render_term_trigger("log-scale")}부터 확인하면 전체 흐름을 읽기 쉽습니다.
           </p>
         </div>
-        <div class=\"term-list\" aria-label=\"Glossary terms\">{triggers}</div>
+        <div class=\"term-list\" aria-label=\"용어 목록\">{triggers}</div>
       </section>
     """
 
@@ -403,7 +402,7 @@ def render_term_trigger(key: str) -> str:
 
 def render_developer_drawer(run_dir: Path, stats_table: str, counts_table: str) -> str:
     return f"""
-    <aside class=\"developer-drawer\" id=\"developer-drawer\" aria-label=\"Developer information\">
+    <aside class=\"developer-drawer\" id=\"developer-drawer\" aria-label=\"개발자 정보\">
       <button
         class=\"developer-toggle\"
         type=\"button\"
@@ -411,21 +410,21 @@ def render_developer_drawer(run_dir: Path, stats_table: str, counts_table: str) 
         aria-expanded=\"false\"
         onclick=\"toggleDeveloperDrawer()\"
       >
-        Developer information
+        개발자 정보
       </button>
       <div class=\"developer-content\">
-        <p class=\"eyebrow\">Developer information</p>
-        <h2>Generated artifacts</h2>
+        <p class=\"eyebrow\">개발자 정보</p>
+        <h2>생성 산출물</h2>
         <div class=\"developer-section\">
-          <h3>Run directory</h3>
+          <h3>실행 디렉터리</h3>
           <pre>{escape_html(str(run_dir))}</pre>
         </div>
         <div class=\"developer-section\">
-          <h3>Distribution stats</h3>
+          <h3>분포 통계</h3>
           {stats_table}
         </div>
         <div class=\"developer-section\">
-          <h3>Record counts</h3>
+          <h3>레코드 수</h3>
           {counts_table}
         </div>
       </div>
@@ -718,7 +717,7 @@ def slugify(value: str) -> str:
 
 def render_distribution_stats(distribution_stats: dict[str, Any]) -> str:
     if not distribution_stats:
-        return "<p>No distribution stats found.</p>"
+        return "<p>분포 통계를 찾을 수 없습니다.</p>"
     headers = ["activity_type", "count", "min", "mean", "p50", "p95", "p99", "max"]
     rows = []
     for activity_type, stats in sorted(distribution_stats.items()):
@@ -728,7 +727,7 @@ def render_distribution_stats(distribution_stats: dict[str, Any]) -> str:
 
 def render_record_counts(record_counts: dict[str, Any]) -> str:
     if not record_counts:
-        return "<p>No record counts found.</p>"
+        return "<p>레코드 수를 찾을 수 없습니다.</p>"
     rows = [[key, value] for key, value in sorted(record_counts.items())]
     return render_table(["path", "rows"], rows)
 
