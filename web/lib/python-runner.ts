@@ -64,7 +64,7 @@ export function buildSmokeRunPlan({
 }): SmokeRunPlan {
   const runId = buildRunId({ now, seed, uniqueSuffix });
   const runDir = `${WEB_RUNS_RELATIVE_DIR}/${runId}`;
-  const python = pythonCommand ?? process.env.SYNTHETIC_ESG_PYTHON ?? process.env.PYTHON ?? "python";
+  const python = resolvePythonCommand(pythonCommand);
   const generateArgs = [
     "-m",
     "synthetic_esg",
@@ -163,6 +163,24 @@ export async function createSmokeRun(repoRoot: string, input: CreateRunRequest):
   }
 }
 
+export async function refreshVisualReport(repoRoot: string, run: WebRun): Promise<void> {
+  await runCommand({
+    command: resolvePythonCommand(),
+    args: [
+      "-m",
+      "synthetic_esg",
+      "visualize",
+      "--run-dir",
+      run.runDir,
+      "--out-dir",
+      `${run.runDir}/reports`,
+      "--plotly-js",
+      "cdn",
+    ],
+    cwd: repoRoot,
+  });
+}
+
 function runCommand(commandSpec: CommandSpec): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(commandSpec.command, commandSpec.args, {
@@ -188,6 +206,10 @@ function runCommand(commandSpec: CommandSpec): Promise<{ stdout: string; stderr:
       reject(new Error(`${commandSpec.command} exited with code ${code}: ${stderr || stdout}`));
     });
   });
+}
+
+function resolvePythonCommand(explicitCommand?: string): string {
+  return explicitCommand ?? process.env.SYNTHETIC_ESG_PYTHON ?? process.env.PYTHON ?? "python";
 }
 
 function commandToString(command: string, args: string[]): string {

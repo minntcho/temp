@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { getRepoRootFromWebCwd, getRunDir, getRunFilePath, readWebRun, type WebRun } from "@/lib/run-registry";
+import { getRepoRootFromWebCwd, readWebRun, type WebRun } from "@/lib/run-registry";
+import { readCurrentVisualReportHtml } from "@/lib/visual-report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,19 +15,18 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
   let run: WebRun | null = null;
   try {
     run = await readWebRun(repoRoot, runId);
-    const reportPath = getRunFilePath(getRunDir(repoRoot, runId), run.visualReportPath);
-    const html = await readFile(reportPath, "utf-8");
+    const html = await readCurrentVisualReportHtml(repoRoot, run);
     return new Response(html, {
       headers: {
         "content-type": "text/html; charset=utf-8",
         "x-content-type-options": "nosniff",
       },
     });
-  } catch {
+  } catch (error) {
     if (!run) {
       return Response.json({ error: "run not found" }, { status: 404 });
     }
-    return new Response(renderMissingReportPage(run), {
+    return new Response(renderMissingReportPage(run, error), {
       headers: {
         "content-type": "text/html; charset=utf-8",
         "x-content-type-options": "nosniff",
@@ -36,8 +35,9 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
   }
 }
 
-function renderMissingReportPage(run: WebRun): string {
-  const detail = run.error ? `<p class="error">${escapeHtml(run.error)}</p>` : "";
+function renderMissingReportPage(run: WebRun, error?: unknown): string {
+  const message = error instanceof Error ? error.message : run.error;
+  const detail = message ? `<p class="error">${escapeHtml(message)}</p>` : "";
   return `<!doctype html>
 <html lang="ko">
 <head>
@@ -81,7 +81,7 @@ function renderMissingReportPage(run: WebRun): string {
 <body>
   <main>
     <h1>리포트를 열 수 없습니다</h1>
-    <p>이 run은 등록되어 있지만 Plotly HTML 리포트 파일이 아직 생성되지 않았습니다. 실행 상태와 Python 경로 설정을 확인해 주세요.</p>
+    <p>이 run은 등록되어 있지만 현재 Plotly HTML 리포트를 생성하거나 갱신하지 못했습니다. 실행 상태와 Python 경로 설정을 확인해 주세요.</p>
     ${detail}
   </main>
 </body>
