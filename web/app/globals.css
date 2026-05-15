@@ -323,18 +323,55 @@ h3 {
   text-align: center;
 }
 
-.detail-grid {
+.report-workspace {
+  align-items: start;
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+}
+
+.report-panel {
+  min-width: 0;
 }
 
 .report-frame {
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 720px;
+  height: clamp(680px, 76vh, 840px);
   width: 100%;
+}
+
+.developer-rail {
+  max-height: calc(100vh - 36px);
+  min-width: 0;
+  overflow: auto;
+  position: sticky;
+  top: 18px;
+}
+
+.developer-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.developer-section {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+
+.developer-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.developer-section-heading {
+  margin-bottom: 10px;
+}
+
+.developer-section-heading h3 {
+  font-size: 0.98rem;
+  line-height: 1.25;
 }
 
 .json-panel,
@@ -393,12 +430,17 @@ h3 {
 
   .topbar,
   .workspace-grid,
-  .detail-grid {
+  .report-workspace {
     grid-template-columns: 1fr;
   }
 
   .topbar {
     display: grid;
+  }
+
+  .developer-rail {
+    max-height: none;
+    position: static;
   }
 
   .overview-grid {
