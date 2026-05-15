@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import plotly.graph_objects as go
+from plotly.offline.offline import get_plotlyjs
 from plotly.io import to_html
 
 
@@ -113,6 +114,8 @@ def build_visual_report(run_dir: Path, out_dir: Path | None = None, *, include_p
         include_plotlyjs=include_plotlyjs,
     )
     out_path = out_dir / "distribution_dashboard.html"
+    if include_plotlyjs == "directory":
+        (out_dir / "plotly.min.js").write_text(get_plotlyjs(), encoding="utf-8")
     out_path.write_text(html, encoding="utf-8")
     return out_path
 

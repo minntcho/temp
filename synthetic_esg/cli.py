@@ -37,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     visualize.add_argument("--run-dir", type=Path, required=True)
     visualize.add_argument("--out-dir", type=Path, default=None)
-    visualize.add_argument("--plotly-js", choices=["cdn", "inline"], default="cdn")
+    visualize.add_argument("--plotly-js", choices=["cdn", "directory", "inline"], default="directory")
     visualize.set_defaults(handler=handle_visualize)
 
     return parser
@@ -52,7 +52,7 @@ def handle_generate(args: argparse.Namespace) -> int:
 
 
 def handle_visualize(args: argparse.Namespace) -> int:
-    include_plotlyjs = True if args.plotly_js == "inline" else "cdn"
+    include_plotlyjs = True if args.plotly_js == "inline" else args.plotly_js
     report_path = build_visual_report(args.run_dir, args.out_dir, include_plotlyjs=include_plotlyjs)
     print(f"[OK] Plotly visual report created: {report_path.resolve()}")
     return 0

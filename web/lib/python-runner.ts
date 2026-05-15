@@ -85,7 +85,7 @@ export function buildSmokeRunPlan({
     "--out-dir",
     `${runDir}/reports`,
     "--plotly-js",
-    "cdn",
+    "directory",
   ];
 
   return {
