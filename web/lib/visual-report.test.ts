@@ -78,6 +78,19 @@ describe("visual report freshness", () => {
     expect(html).toContain('src="plotly.min.js"');
     expect(html).not.toContain("https://cdn.plot.ly");
   });
+
+  it("treats v2 report-drawer HTML as stale", () => {
+    const oldDrawerHtml = [
+      "<!doctype html>",
+      '<meta name="synthetic-esg-report-template" content="explainable-ko-v2-local-plotly">',
+      '<script src="plotly.min.js"></script>',
+      '<aside class="developer-drawer" id="developer-drawer">',
+      '<button class="developer-toggle">개발자 정보</button>',
+      "</aside>",
+    ].join("");
+
+    expect(isCurrentVisualReportHtml(oldDrawerHtml)).toBe(false);
+  });
 });
 
 function makeRun(runId: string): WebRun {
