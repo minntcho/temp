@@ -1,5 +1,18 @@
 # Agent Instructions
 
+## Architecture Notes
+
+Read `docs/ARCHITECTURE.md` before making broad structural changes.
+That document uses Mermaid diagrams as an orientation map, not as a frozen
+design mandate.
+
+- Do not add nested `AGENTS.md` files unless the user explicitly asks.
+- Do not duplicate the repository purpose or output contract in agent notes.
+- The project purpose and non-goals live in `README.md`.
+- The output contract lives in `synthetic_esg/generators/scaffold.py`.
+- If architecture notes conflict with code, tests, or the README, treat the
+  notes as stale and report the mismatch before changing behavior.
+
 ## Setup
 
 Install the repository dependencies before running the generator or test suite.
