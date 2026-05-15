@@ -49,6 +49,18 @@ python -m synthetic_esg generate \
   --seed 1
 ```
 
+## Web Run Dashboard
+
+Next.js 대시보드는 `web/` 아래에 있으며, smoke profile 실행 이력을 `out/web-runs/<run-id>/` 단위로 보관합니다. 각 run 폴더에는 `web_run.json`, `manifest.json`, `generation_report.json`, 생성 데이터 폴더, Plotly HTML 리포트가 함께 남습니다.
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+브라우저에서 `http://127.0.0.1:3000`을 열고 `Run smoke`를 실행하면 `profiles/lges_smoke.yaml` 기준 synthetic ESG 데이터와 `reports/distribution_dashboard.html`이 생성됩니다. Python 실행 파일을 명시해야 하는 환경에서는 `SYNTHETIC_ESG_PYTHON`에 Python 경로를 지정합니다.
+
 대기업 규모 override 예시:
 
 ```bash
