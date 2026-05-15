@@ -11,7 +11,7 @@ from plotly.io import to_html
 
 
 REPORT_COLORWAY = ["#0f766e", "#2563eb", "#b45309", "#6d28d9", "#b42318", "#64748b"]
-REPORT_TEMPLATE_VERSION = "explainable-ko-v2-local-plotly"
+REPORT_TEMPLATE_VERSION = "explainable-ko-v3-no-report-drawer"
 
 FIGURE_METADATA: dict[str, dict[str, str]] = {
     "활동량 분포": {
@@ -108,7 +108,6 @@ def build_visual_report(run_dir: Path, out_dir: Path | None = None, *, include_p
     html = render_dashboard(
         title="Synthetic ESG 데이터 분포 리포트",
         run_dir=run_dir,
-        distribution_stats=report.get("distribution_stats", {}),
         record_counts=report.get("record_counts", {}),
         figures=figures,
         include_plotlyjs=include_plotlyjs,
@@ -237,13 +236,10 @@ def render_dashboard(
     *,
     title: str,
     run_dir: Path,
-    distribution_stats: dict[str, Any],
     record_counts: dict[str, Any],
     figures: list[tuple[str, go.Figure]],
     include_plotlyjs: str | bool,
 ) -> str:
-    stats_table = render_distribution_stats(distribution_stats)
-    counts_table = render_record_counts(record_counts)
     record_total = sum(value for value in record_counts.values() if isinstance(value, int))
     figure_html = []
     for index, (heading, fig) in enumerate(figures):
@@ -310,8 +306,6 @@ def render_dashboard(
       {render_glossary_panel()}
       {''.join(figure_html)}
     </main>
-
-    {render_developer_drawer(run_dir, stats_table, counts_table)}
   </div>
   <div class=\"term-popover\" id=\"term-popover\" role=\"dialog\" aria-live=\"polite\" hidden></div>
   <script>
@@ -405,38 +399,6 @@ def render_term_trigger(key: str) -> str:
     )
 
 
-def render_developer_drawer(run_dir: Path, stats_table: str, counts_table: str) -> str:
-    return f"""
-    <aside class=\"developer-drawer\" id=\"developer-drawer\" aria-label=\"개발자 정보\">
-      <button
-        class=\"developer-toggle\"
-        type=\"button\"
-        aria-controls=\"developer-drawer\"
-        aria-expanded=\"false\"
-        onclick=\"toggleDeveloperDrawer()\"
-      >
-        개발자 정보
-      </button>
-      <div class=\"developer-content\">
-        <p class=\"eyebrow\">개발자 정보</p>
-        <h2>생성 산출물</h2>
-        <div class=\"developer-section\">
-          <h3>실행 디렉터리</h3>
-          <pre>{escape_html(str(run_dir))}</pre>
-        </div>
-        <div class=\"developer-section\">
-          <h3>분포 통계</h3>
-          {stats_table}
-        </div>
-        <div class=\"developer-section\">
-          <h3>레코드 수</h3>
-          {counts_table}
-        </div>
-      </div>
-    </aside>
-    """
-
-
 def report_css() -> str:
     return """
     :root {
@@ -484,8 +446,6 @@ def report_css() -> str:
       white-space: pre-wrap;
     }
     .report-shell {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
       min-height: 100vh;
     }
     .analysis-guide {
@@ -593,56 +553,6 @@ def report_css() -> str:
     }
     .term-popover h3 { color: #ffffff; margin-bottom: 6px; }
     .term-popover p { color: #c7d4ce; line-height: 1.5; margin: 0; }
-    .developer-drawer {
-      background: #18201d;
-      bottom: 0;
-      box-shadow: -18px 0 42px rgba(24, 32, 29, 0.16);
-      color: #e5eee9;
-      max-width: min(460px, calc(100vw - 40px));
-      position: fixed;
-      right: 0;
-      top: 0;
-      transform: translateX(calc(100% - 48px));
-      transition: transform 160ms ease;
-      width: 460px;
-      z-index: 9;
-    }
-    .developer-drawer.is-open { transform: translateX(0); }
-    .developer-toggle {
-      align-items: center;
-      background: #18201d;
-      border: 0;
-      border-left: 1px solid #2e3a35;
-      color: #e5eee9;
-      cursor: pointer;
-      display: flex;
-      font-size: 0.75rem;
-      font-weight: 900;
-      height: 100%;
-      justify-content: center;
-      left: 0;
-      padding: 8px;
-      position: absolute;
-      top: 0;
-      width: 48px;
-      writing-mode: vertical-rl;
-    }
-    .developer-content {
-      display: grid;
-      gap: 14px;
-      height: 100%;
-      margin-left: 48px;
-      overflow: auto;
-      padding: 22px;
-    }
-    .developer-content h2, .developer-content h3 { color: #ffffff; }
-    .developer-section {
-      border-top: 1px solid #2e3a35;
-      padding-top: 12px;
-    }
-    .developer-section table { color: #e5eee9; }
-    .developer-section th { background: #26302c; color: #aebdb5; }
-    .developer-section td, .developer-section th { border-color: #2e3a35; }
 
     @media (max-width: 860px) {
       .analysis-guide { padding: 16px; }
@@ -657,13 +567,6 @@ def report_script() -> str:
     glossary_json = json.dumps(GLOSSARY, ensure_ascii=True).replace("</", "<\\/")
     return f"""
     const glossary = {glossary_json};
-
-    function toggleDeveloperDrawer() {{
-      const drawer = document.getElementById("developer-drawer");
-      const button = drawer.querySelector(".developer-toggle");
-      const isOpen = drawer.classList.toggle("is-open");
-      button.setAttribute("aria-expanded", String(isOpen));
-    }}
 
     function closeTermPopover() {{
       const popover = document.getElementById("term-popover");
@@ -718,32 +621,6 @@ def slugify(value: str) -> str:
             parts.append("-")
             previous_dash = True
     return "".join(parts).strip("-") or "analysis"
-
-
-def render_distribution_stats(distribution_stats: dict[str, Any]) -> str:
-    if not distribution_stats:
-        return "<p>분포 통계를 찾을 수 없습니다.</p>"
-    headers = ["activity_type", "count", "min", "mean", "p50", "p95", "p99", "max"]
-    rows = []
-    for activity_type, stats in sorted(distribution_stats.items()):
-        rows.append([activity_type] + [stats.get(header, "") for header in headers[1:]])
-    return render_table(headers, rows)
-
-
-def render_record_counts(record_counts: dict[str, Any]) -> str:
-    if not record_counts:
-        return "<p>레코드 수를 찾을 수 없습니다.</p>"
-    rows = [[key, value] for key, value in sorted(record_counts.items())]
-    return render_table(["path", "rows"], rows)
-
-
-def render_table(headers: list[str], rows: list[list[Any]]) -> str:
-    header_html = "".join(f"<th>{escape_html(header)}</th>" for header in headers)
-    body_rows = []
-    for row in rows:
-        cells = "".join(f"<td>{escape_html(str(value))}</td>" for value in row)
-        body_rows.append(f"<tr>{cells}</tr>")
-    return f"<table><thead><tr>{header_html}</tr></thead><tbody>{''.join(body_rows)}</tbody></table>"
 
 
 def escape_html(value: str) -> str:
