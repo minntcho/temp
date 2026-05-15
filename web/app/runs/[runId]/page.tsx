@@ -64,60 +64,61 @@ export default async function RunPage({ params }: RunPageProps) {
         </div>
       </section>
 
-      <section className="detail-grid">
-        <div className="split-stack">
-          <section className="panel" aria-labelledby="report-title">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Distribution</p>
-                <h2 id="report-title">Plotly report</h2>
-              </div>
+      <section className="report-workspace">
+        <section className="panel report-panel" aria-labelledby="report-title">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Distribution</p>
+              <h2 id="report-title">Plotly report</h2>
             </div>
-            {reportReady ? (
-              <iframe className="report-frame" src={`/api/runs/${bundle.run.runId}/report`} title="Plotly distribution report" />
-            ) : (
-              <div className="empty-state">{reportUnavailableMessage(bundle)}</div>
-            )}
-          </section>
+          </div>
+          {reportReady ? (
+            <iframe className="report-frame" src={`/api/runs/${bundle.run.runId}/report`} title="Plotly distribution report" />
+          ) : (
+            <div className="empty-state">{reportUnavailableMessage(bundle)}</div>
+          )}
+        </section>
 
-          <section className="panel" aria-labelledby="manifest-title">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Manifest</p>
-                <h2 id="manifest-title">Generation contract</h2>
-              </div>
+        <aside className="developer-rail panel" aria-labelledby="developer-title">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Developer</p>
+              <h2 id="developer-title">Artifacts & metadata</h2>
             </div>
-            <pre className="json-panel">{JSON.stringify(bundle.manifest ?? {}, null, 2)}</pre>
-          </section>
-        </div>
+          </div>
 
-        <aside className="split-stack">
-          <section className="panel" aria-labelledby="files-title">
-            <div className="panel-heading">
-              <div>
+          <div className="developer-stack">
+            <section className="developer-section" aria-labelledby="files-title">
+              <div className="developer-section-heading">
                 <p className="eyebrow">Artifact</p>
-                <h2 id="files-title">Run files</h2>
+                <h3 id="files-title">Run files</h3>
               </div>
-            </div>
-            <div className="file-table">
-              {bundle.files.map((file) => (
-                <div className="file-row" key={file.path}>
-                  <code>{file.path}</code>
-                  <span className="file-size">{formatBytes(file.size)}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+              <div className="file-table">
+                {bundle.files.map((file) => (
+                  <div className="file-row" key={file.path}>
+                    <code>{file.path}</code>
+                    <span className="file-size">{formatBytes(file.size)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-          <section className="panel" aria-labelledby="web-run-title">
-            <div className="panel-heading">
-              <div>
+            <section className="developer-section" aria-labelledby="web-run-title">
+              <div className="developer-section-heading">
                 <p className="eyebrow">Web Run</p>
-                <h2 id="web-run-title">Execution metadata</h2>
+                <h3 id="web-run-title">Execution metadata</h3>
               </div>
-            </div>
-            <pre className="json-panel">{JSON.stringify(bundle.run, null, 2)}</pre>
-          </section>
+              <pre className="json-panel">{JSON.stringify(bundle.run, null, 2)}</pre>
+            </section>
+
+            <section className="developer-section" aria-labelledby="manifest-title">
+              <div className="developer-section-heading">
+                <p className="eyebrow">Manifest</p>
+                <h3 id="manifest-title">Generation contract</h3>
+              </div>
+              <pre className="json-panel">{JSON.stringify(bundle.manifest ?? {}, null, 2)}</pre>
+            </section>
+          </div>
         </aside>
       </section>
     </main>
