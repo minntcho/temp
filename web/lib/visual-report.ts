@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { refreshVisualReport } from "@/lib/python-runner";
 import { getRunDir, getRunFilePath, type WebRun } from "@/lib/run-registry";
 
-export const VISUAL_REPORT_TEMPLATE_VERSION = "explainable-ko-v1";
+export const VISUAL_REPORT_TEMPLATE_VERSION = "explainable-ko-v2-local-plotly";
 export const VISUAL_REPORT_TEMPLATE_MARKER = `name="synthetic-esg-report-template" content="${VISUAL_REPORT_TEMPLATE_VERSION}"`;
 
 export type VisualReportRefresher = (repoRoot: string, run: WebRun) => Promise<void>;
