@@ -76,7 +76,7 @@ export default async function RunPage({ params }: RunPageProps) {
             {reportReady ? (
               <iframe className="report-frame" src={`/api/runs/${bundle.run.runId}/report`} title="Plotly distribution report" />
             ) : (
-              <div className="empty-state">Report not available.</div>
+              <div className="empty-state">{reportUnavailableMessage(bundle)}</div>
             )}
           </section>
 
@@ -122,6 +122,16 @@ export default async function RunPage({ params }: RunPageProps) {
       </section>
     </main>
   );
+}
+
+function reportUnavailableMessage(bundle: RunBundle): string {
+  if (bundle.run.status === "failed" && bundle.run.error) {
+    return `Report not available. ${bundle.run.error}`;
+  }
+  if (bundle.run.status === "failed") {
+    return "Report not available. Run failed before the Plotly report was created.";
+  }
+  return "Report not available yet.";
 }
 
 function recordCountTotal(bundle: RunBundle): number {

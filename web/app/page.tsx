@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { CreateRunPanel } from "@/app/components/CreateRunPanel";
 import { RunStatusPill } from "@/app/components/RunStatusPill";
-import { getRepoRootFromWebCwd, listRuns, type WebRun } from "@/lib/run-registry";
+import { getRepoRootFromWebCwd, hasRunFile, listRuns, type WebRun } from "@/lib/run-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export default async function Home() {
   const repoRoot = getRepoRootFromWebCwd();
   const runs = await listRuns(repoRoot);
   const succeededRuns = runs.filter((run) => run.status === "succeeded").length;
-  const latestRun = runs[0];
+  const latestReportRun = await findLatestReportRun(repoRoot, runs);
 
   return (
     <main className="shell">
@@ -24,8 +24,8 @@ export default async function Home() {
           </p>
         </div>
         <div className="top-actions">
-          {latestRun ? (
-            <Link className="icon-link" href={`/runs/${latestRun.runId}`}>
+          {latestReportRun ? (
+            <Link className="icon-link" href={`/runs/${latestReportRun.runId}`}>
               <BarChart3 aria-hidden="true" size={18} />
               Latest report
             </Link>
@@ -37,7 +37,7 @@ export default async function Home() {
         <Metric icon={<History aria-hidden="true" size={22} />} label="Total runs" value={runs.length} />
         <Metric icon={<Database aria-hidden="true" size={22} />} label="Succeeded" value={succeededRuns} />
         <Metric icon={<FolderClock aria-hidden="true" size={22} />} label="Profile" value="smoke" />
-        <Metric icon={<BarChart3 aria-hidden="true" size={22} />} label="Report" value={latestRun ? "ready" : "empty"} />
+        <Metric icon={<BarChart3 aria-hidden="true" size={22} />} label="Report" value={latestReportRun ? "ready" : "missing"} />
       </section>
 
       <section className="workspace-grid">
@@ -62,6 +62,18 @@ export default async function Home() {
       </section>
     </main>
   );
+}
+
+async function findLatestReportRun(repoRoot: string, runs: WebRun[]): Promise<WebRun | null> {
+  for (const run of runs) {
+    if (run.status !== "succeeded") {
+      continue;
+    }
+    if (await hasRunFile(repoRoot, run, run.visualReportPath)) {
+      return run;
+    }
+  }
+  return null;
 }
 
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {

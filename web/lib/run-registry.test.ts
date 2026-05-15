@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   buildRunId,
   getRunFilePath,
+  hasRunFile,
   isValidRunId,
   listRuns,
   readRunBundle,
@@ -60,6 +61,19 @@ describe("run registry", () => {
     );
     expect(() => getRunFilePath(runDir, "../secret.txt")).toThrow("Invalid run file path");
     expect(() => getRunFilePath(runDir, "reports/../../secret.txt")).toThrow("Invalid run file path");
+  });
+
+  it("checks whether a known run file exists", async () => {
+    const run = makeRun("file-check", "2026-05-15T03:00:00.000Z");
+    await writeWebRun(repoRoot, run);
+
+    expect(await hasRunFile(repoRoot, run, run.visualReportPath)).toBe(false);
+
+    const reportPath = path.join(repoRoot, run.runDir, "reports", "distribution_dashboard.html");
+    await mkdir(path.dirname(reportPath), { recursive: true });
+    await writeFile(reportPath, "<!doctype html>ready", "utf-8");
+
+    expect(await hasRunFile(repoRoot, run, run.visualReportPath)).toBe(true);
   });
 
   it("lists persisted runs newest first", async () => {
